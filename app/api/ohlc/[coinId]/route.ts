@@ -3,7 +3,7 @@ import { filterOHLCByTimeframe } from '@/lib/coingecko'
 import type { OHLCData } from '@/types'
 
 const COIN_ID_RE = /^[a-z0-9-]{1,64}$/
-const VALID_DAYS = new Set(['1', '7', '90', '365', 'max'])
+const VALID_DAYS = new Set(['1', '7', '14', '30', '90', '365', 'max'])
 // Note: in-memory cache is ineffective in serverless/Edge environments.
 // For production, replace with Next.js fetch revalidate or an external cache (KV/Redis).
 const cache = new Map<string, { data: OHLCData[]; ts: number }>()

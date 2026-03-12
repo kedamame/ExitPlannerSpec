@@ -3,8 +3,8 @@ import type { OHLCData, TimeframeConfig } from '@/types'
 const BASE_URL = 'https://api.coingecko.com/api/v3'
 
 export const TIMEFRAME_CONFIGS: TimeframeConfig[] = [
-  { label: '1H', days: '1', interval: 'hourly' },
-  { label: '4H', days: '7', interval: 'hourly' },
+  { label: '1H', days: '7', interval: 'hourly' },
+  { label: '4H', days: '30', interval: 'hourly' },
   { label: '1D', days: '90', interval: 'daily' },
   { label: '1W', days: '365', interval: 'daily' },
   { label: '1M', days: 'max', interval: 'monthly' },
