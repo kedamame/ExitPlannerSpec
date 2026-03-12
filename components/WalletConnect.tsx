@@ -42,15 +42,11 @@ function getKnown(address: string) {
   return KNOWN_ETH_MAP.get(address) ?? KNOWN_BASE_MAP.get(address) ?? null
 }
 
-function getKnownChain(address: string): Chain {
-  if (KNOWN_ETH_MAP.has(address)) return 'eth'
-  if (KNOWN_BASE_MAP.has(address)) return 'base'
-  return 'eth'
-}
+const CHAIN_ID: Record<Chain, number> = { eth: 1, base: 8453 }
 
 const CHAIN_BADGE: Record<Chain, { label: string; className: string }> = {
-  eth: { label: 'ETH', className: 'bg-blue-500/20 text-blue-400 border border-blue-500/30' },
-  base: { label: 'Base', className: 'bg-blue-600/20 text-blue-300 border border-blue-600/30' },
+  eth: { label: 'ERC-20', className: 'bg-blue-500/20 text-blue-400 border border-blue-500/30' },
+  base: { label: 'ERC-20', className: 'bg-blue-600/20 text-blue-300 border border-blue-600/30' },
 }
 
 export function WalletConnect({
@@ -100,13 +96,14 @@ export function WalletConnect({
       .finally(() => setLoadingList(false))
   }, [address])
 
-  // Read balanceOf for all tokens in the merged list
+  // Read balanceOf for all tokens — specify chainId so Base tokens are queried on chain 8453
   const contracts = address && tokenList.length > 0
     ? tokenList.map((t) => ({
         address: t.address as `0x${string}`,
         abi: erc20Abi,
         functionName: 'balanceOf' as const,
         args: [address],
+        chainId: CHAIN_ID[t.chain],
       }))
     : []
 
