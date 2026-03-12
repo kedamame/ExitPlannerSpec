@@ -7,6 +7,13 @@ import { injected } from 'wagmi/connectors'
 import { erc20Abi, formatUnits } from 'viem'
 import { ALL_KNOWN_TOKENS } from '@/lib/knownTokens'
 
+interface MergedToken {
+  address: string
+  symbol: string
+  name: string
+  decimals: number
+}
+
 interface TokenInfo {
   coinId: string
   contractAddress: string
@@ -23,6 +30,9 @@ interface Props {
   disconnectLabel?: string
 }
 
+// Build a map of address → known token for quick lookup
+const KNOWN_MAP = new Map(ALL_KNOWN_TOKENS.map((t) => [t.address.toLowerCase(), t]))
+
 export function WalletConnect({
   connectEVMLabel = 'Connect EVM Wallet',
   connectSolanaLabel = 'Connect Solana Wallet',
@@ -32,13 +42,46 @@ export function WalletConnect({
   const { address, isConnected } = useAccount()
   const { connect } = useConnect()
   const { disconnect } = useDisconnect()
+  const [tokenList, setTokenList] = useState<MergedToken[]>([])
   const [tokens, setTokens] = useState<TokenInfo[]>([])
+  const [loadingList, setLoadingList] = useState(false)
   const [loadingPrices, setLoadingPrices] = useState(false)
   const router = useRouter()
 
-  // Read balanceOf for all known tokens
-  const contracts = address
-    ? ALL_KNOWN_TOKENS.map((t) => ({
+  // Build token list: known tokens + Etherscan-discovered tokens merged
+  useEffect(() => {
+    if (!address) { setTokenList([]); setTokens([]); return }
+    setLoadingList(true)
+
+    fetch(`/api/wallet-tokens?address=${address}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const ethTokens: Array<{ contractAddress: string; symbol: string; name: string; decimals: number }> =
+          data.tokens ?? []
+        // Start with ALL_KNOWN_TOKENS, add any Etherscan-discovered tokens not already in the list
+        const merged = new Map<string, MergedToken>(
+          ALL_KNOWN_TOKENS.map((t) => [t.address.toLowerCase(), { address: t.address.toLowerCase(), symbol: t.symbol, name: t.name, decimals: t.decimals }])
+        )
+        for (const t of ethTokens) {
+          const addr = t.contractAddress.toLowerCase()
+          if (!merged.has(addr)) {
+            merged.set(addr, { address: addr, symbol: t.symbol, name: t.name, decimals: t.decimals })
+          }
+        }
+        setTokenList(Array.from(merged.values()))
+      })
+      .catch(() => {
+        // Etherscan failed — fall back to known tokens only
+        setTokenList(
+          ALL_KNOWN_TOKENS.map((t) => ({ address: t.address.toLowerCase(), symbol: t.symbol, name: t.name, decimals: t.decimals }))
+        )
+      })
+      .finally(() => setLoadingList(false))
+  }, [address])
+
+  // Read balanceOf for all tokens in the merged list
+  const contracts = address && tokenList.length > 0
+    ? tokenList.map((t) => ({
         address: t.address as `0x${string}`,
         abi: erc20Abi,
         functionName: 'balanceOf' as const,
@@ -48,16 +91,16 @@ export function WalletConnect({
 
   const { data: balances, isLoading: balancesLoading } = useReadContracts({
     contracts,
-    query: { enabled: !!address },
+    query: { enabled: contracts.length > 0 },
   })
 
-  // Filter non-zero balances and fetch USD prices
+  // Filter non-zero balances and fetch prices
   useEffect(() => {
     if (!address) { setTokens([]); return }
-    if (!balances || balancesLoading) return
+    if (!balances || balancesLoading || tokenList.length === 0) return
     setLoadingPrices(true)
 
-    const nonZero = ALL_KNOWN_TOKENS.map((t, i) => {
+    const nonZero = tokenList.map((t, i) => {
       const result = balances[i]
       if (result?.status !== 'success') return null
       const raw = result.result as bigint
@@ -65,7 +108,7 @@ export function WalletConnect({
       const fmt = parseFloat(formatUnits(raw, t.decimals))
       if (fmt < 0.0001) return null
       return { ...t, balanceNum: fmt }
-    }).filter(Boolean) as (typeof ALL_KNOWN_TOKENS[number] & { balanceNum: number })[]
+    }).filter(Boolean) as (MergedToken & { balanceNum: number })[]
 
     if (nonZero.length === 0) {
       setTokens([])
@@ -73,37 +116,43 @@ export function WalletConnect({
       return
     }
 
-    // Fetch prices via CoinGecko IDs (already known from knownTokens)
-    const ids = [...new Set(nonZero.map((t) => t.coinId))].join(',')
-    fetch(`/api/price-multi?ids=${encodeURIComponent(ids)}`)
+    // Resolve coinId + price via contract addresses
+    const addrs = nonZero.map((t) => t.address).join(',')
+    fetch(`/api/coingecko-ids?addresses=${encodeURIComponent(addrs)}`)
       .then((r) => r.json())
-      .then((priceMap: Record<string, number>) => {
+      .then((idMap: Record<string, { id: string; usd: number }>) => {
         setTokens(nonZero.map((t) => {
-          const usd = priceMap[t.coinId]
+          // Prefer CoinGecko-resolved id, fall back to known token coinId
+          const resolved = idMap[t.address]
+          const known = KNOWN_MAP.get(t.address)
+          const coinId = resolved?.id ?? known?.coinId ?? t.symbol.toLowerCase()
           const bal = t.balanceNum
           return {
-            coinId: t.coinId,
+            coinId,
             contractAddress: t.address,
             symbol: t.symbol,
             name: t.name,
             balance: bal < 0.01 ? bal.toFixed(6) : bal < 1000 ? bal.toFixed(4) : bal.toFixed(2),
-            usdValue: usd ? usd * bal : undefined,
+            usdValue: resolved?.usd ? resolved.usd * bal : undefined,
           }
         }))
       })
       .catch(() => {
-        setTokens(nonZero.map((t) => ({
-          coinId: t.coinId,
-          contractAddress: t.address,
-          symbol: t.symbol,
-          name: t.name,
-          balance: t.balanceNum.toFixed(4),
-        })))
+        setTokens(nonZero.map((t) => {
+          const known = KNOWN_MAP.get(t.address)
+          return {
+            coinId: known?.coinId ?? t.symbol.toLowerCase(),
+            contractAddress: t.address,
+            symbol: t.symbol,
+            name: t.name,
+            balance: t.balanceNum.toFixed(4),
+          }
+        }))
       })
       .finally(() => setLoadingPrices(false))
-  }, [address, balances, balancesLoading])
+  }, [address, balances, balancesLoading, tokenList])
 
-  const isLoading = balancesLoading || loadingPrices
+  const isLoading = loadingList || balancesLoading || loadingPrices
 
   if (isConnected && address) {
     return (
