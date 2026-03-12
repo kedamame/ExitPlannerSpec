@@ -5,13 +5,16 @@ import { useRouter } from 'next/navigation'
 import { useAccount, useConnect, useDisconnect, useReadContracts } from 'wagmi'
 import { injected } from 'wagmi/connectors'
 import { erc20Abi, formatUnits } from 'viem'
-import { ALL_KNOWN_TOKENS } from '@/lib/knownTokens'
+import { ETHEREUM_TOKENS, BASE_TOKENS } from '@/lib/knownTokens'
+
+type Chain = 'eth' | 'base'
 
 interface MergedToken {
   address: string
   symbol: string
   name: string
   decimals: number
+  chain: Chain
 }
 
 interface TokenInfo {
@@ -20,6 +23,7 @@ interface TokenInfo {
   symbol: string
   name: string
   balance: string
+  chain: Chain
   usdValue?: number
 }
 
@@ -30,8 +34,24 @@ interface Props {
   disconnectLabel?: string
 }
 
-// Build a map of address → known token for quick lookup
-const KNOWN_MAP = new Map(ALL_KNOWN_TOKENS.map((t) => [t.address.toLowerCase(), t]))
+// Address → chain lookup for known tokens
+const KNOWN_ETH_MAP = new Map(ETHEREUM_TOKENS.map((t) => [t.address.toLowerCase(), t]))
+const KNOWN_BASE_MAP = new Map(BASE_TOKENS.map((t) => [t.address.toLowerCase(), t]))
+
+function getKnown(address: string) {
+  return KNOWN_ETH_MAP.get(address) ?? KNOWN_BASE_MAP.get(address) ?? null
+}
+
+function getKnownChain(address: string): Chain {
+  if (KNOWN_ETH_MAP.has(address)) return 'eth'
+  if (KNOWN_BASE_MAP.has(address)) return 'base'
+  return 'eth'
+}
+
+const CHAIN_BADGE: Record<Chain, { label: string; className: string }> = {
+  eth: { label: 'ETH', className: 'bg-blue-500/20 text-blue-400 border border-blue-500/30' },
+  base: { label: 'Base', className: 'bg-blue-600/20 text-blue-300 border border-blue-600/30' },
+}
 
 export function WalletConnect({
   connectEVMLabel = 'Connect EVM Wallet',
@@ -48,34 +68,35 @@ export function WalletConnect({
   const [loadingPrices, setLoadingPrices] = useState(false)
   const router = useRouter()
 
-  // Build token list: known tokens + Etherscan-discovered tokens merged
+  // Build token list: known tokens + API-discovered tokens merged
   useEffect(() => {
     if (!address) { setTokenList([]); setTokens([]); return }
     setLoadingList(true)
 
+    const allKnown = new Map<string, MergedToken>([
+      ...Array.from(KNOWN_ETH_MAP.entries()).map(([addr, t]) =>
+        [addr, { address: addr, symbol: t.symbol, name: t.name, decimals: t.decimals, chain: 'eth' as Chain }] as const
+      ),
+      ...Array.from(KNOWN_BASE_MAP.entries()).map(([addr, t]) =>
+        [addr, { address: addr, symbol: t.symbol, name: t.name, decimals: t.decimals, chain: 'base' as Chain }] as const
+      ),
+    ])
+
     fetch(`/api/wallet-tokens?address=${address}`)
       .then((r) => r.json())
       .then((data) => {
-        const ethTokens: Array<{ contractAddress: string; symbol: string; name: string; decimals: number }> =
+        const apiTokens: Array<{ contractAddress: string; symbol: string; name: string; decimals: number; chain: Chain }> =
           data.tokens ?? []
-        // Start with ALL_KNOWN_TOKENS, add any Etherscan-discovered tokens not already in the list
-        const merged = new Map<string, MergedToken>(
-          ALL_KNOWN_TOKENS.map((t) => [t.address.toLowerCase(), { address: t.address.toLowerCase(), symbol: t.symbol, name: t.name, decimals: t.decimals }])
-        )
-        for (const t of ethTokens) {
+        const merged = new Map(allKnown)
+        for (const t of apiTokens) {
           const addr = t.contractAddress.toLowerCase()
           if (!merged.has(addr)) {
-            merged.set(addr, { address: addr, symbol: t.symbol, name: t.name, decimals: t.decimals })
+            merged.set(addr, { address: addr, symbol: t.symbol, name: t.name, decimals: t.decimals, chain: t.chain ?? 'eth' })
           }
         }
         setTokenList(Array.from(merged.values()))
       })
-      .catch(() => {
-        // Etherscan failed — fall back to known tokens only
-        setTokenList(
-          ALL_KNOWN_TOKENS.map((t) => ({ address: t.address.toLowerCase(), symbol: t.symbol, name: t.name, decimals: t.decimals }))
-        )
-      })
+      .catch(() => setTokenList(Array.from(allKnown.values())))
       .finally(() => setLoadingList(false))
   }, [address])
 
@@ -116,15 +137,13 @@ export function WalletConnect({
       return
     }
 
-    // Resolve coinId + price via contract addresses
     const addrs = nonZero.map((t) => t.address).join(',')
     fetch(`/api/coingecko-ids?addresses=${encodeURIComponent(addrs)}`)
       .then((r) => r.json())
       .then((idMap: Record<string, { id: string; usd: number }>) => {
         setTokens(nonZero.map((t) => {
-          // Prefer CoinGecko-resolved id, fall back to known token coinId
           const resolved = idMap[t.address]
-          const known = KNOWN_MAP.get(t.address)
+          const known = getKnown(t.address)
           const coinId = resolved?.id ?? known?.coinId ?? t.symbol.toLowerCase()
           const bal = t.balanceNum
           return {
@@ -132,6 +151,7 @@ export function WalletConnect({
             contractAddress: t.address,
             symbol: t.symbol,
             name: t.name,
+            chain: t.chain,
             balance: bal < 0.01 ? bal.toFixed(6) : bal < 1000 ? bal.toFixed(4) : bal.toFixed(2),
             usdValue: resolved?.usd ? resolved.usd * bal : undefined,
           }
@@ -139,12 +159,13 @@ export function WalletConnect({
       })
       .catch(() => {
         setTokens(nonZero.map((t) => {
-          const known = KNOWN_MAP.get(t.address)
+          const known = getKnown(t.address)
           return {
             coinId: known?.coinId ?? t.symbol.toLowerCase(),
             contractAddress: t.address,
             symbol: t.symbol,
             name: t.name,
+            chain: t.chain,
             balance: t.balanceNum.toFixed(4),
           }
         }))
@@ -178,23 +199,31 @@ export function WalletConnect({
           <div>
             <p className="text-xs text-gray-500 mb-2">{walletTokensLabel} ({tokens.length})</p>
             <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
-              {tokens.map((t, i) => (
-                <button
-                  key={`${t.contractAddress}-${i}`}
-                  onClick={() => router.push(`/chart/${t.coinId}`)}
-                  className="flex flex-col bg-gray-800 hover:bg-gray-700 rounded-lg px-3 py-2 transition text-left"
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-white font-medium text-sm truncate">{t.symbol}</span>
-                    <span className="text-gray-400 text-xs shrink-0">{t.balance}</span>
-                  </div>
-                  {t.usdValue !== undefined && (
-                    <span className="text-gray-500 text-xs mt-0.5">
-                      ≈${t.usdValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                    </span>
-                  )}
-                </button>
-              ))}
+              {tokens.map((t, i) => {
+                const badge = CHAIN_BADGE[t.chain]
+                return (
+                  <button
+                    key={`${t.contractAddress}-${i}`}
+                    onClick={() => router.push(`/chart/${t.coinId}`)}
+                    className="flex flex-col bg-gray-800 hover:bg-gray-700 rounded-lg px-3 py-2 transition text-left"
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-white font-medium text-sm truncate">{t.symbol}</span>
+                      <span className="text-gray-400 text-xs shrink-0">{t.balance}</span>
+                    </div>
+                    <div className="flex items-center justify-between mt-0.5">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${badge.className}`}>
+                        {badge.label}
+                      </span>
+                      {t.usdValue !== undefined && (
+                        <span className="text-gray-500 text-xs">
+                          ≈${t.usdValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           </div>
         ) : (

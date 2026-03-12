@@ -9,6 +9,7 @@ export interface TokenMeta {
   symbol: string
   name: string
   decimals: number
+  chain: 'eth' | 'base'
 }
 
 // Ankr free API — returns all ERC-20 balances without an API key
@@ -38,7 +39,7 @@ async function fetchAnkrTokens(address: string): Promise<TokenMeta[]> {
     tokenSymbol: string
     tokenName: string
     tokenDecimals: number
-    balance: string
+    blockchain: string
   }>)
     .filter((a) => a.tokenType === 'ERC20' && a.contractAddress)
     .map((a) => ({
@@ -46,10 +47,16 @@ async function fetchAnkrTokens(address: string): Promise<TokenMeta[]> {
       symbol: a.tokenSymbol,
       name: a.tokenName,
       decimals: a.tokenDecimals ?? 18,
+      chain: a.blockchain === 'base' ? 'base' : 'eth',
     }))
 }
 
-async function fetchTokenTx(apiUrl: string, address: string, apiKey?: string): Promise<TokenMeta[]> {
+async function fetchTokenTx(
+  apiUrl: string,
+  address: string,
+  chain: 'eth' | 'base',
+  apiKey?: string,
+): Promise<TokenMeta[]> {
   const url = `${apiUrl}?module=account&action=tokentx&address=${address}&sort=desc&offset=200&page=1${apiKey ? `&apikey=${apiKey}` : ''}`
   const res = await fetch(url, { next: { revalidate: 60 } })
   if (!res.ok) return []
@@ -70,6 +77,7 @@ async function fetchTokenTx(apiUrl: string, address: string, apiKey?: string): P
         symbol: tx.tokenSymbol,
         name: tx.tokenName,
         decimals: parseInt(tx.tokenDecimal, 10) || 18,
+        chain,
       })
     }
   }
@@ -90,7 +98,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Try Ankr first (no API key required, returns full token list)
+    // Try Ankr first (no API key required, returns full token list with chain info)
     const ankrTokens = await fetchAnkrTokens(address)
     if (ankrTokens.length > 0) {
       cache.set(cacheKey, { data: ankrTokens, ts: now })
@@ -101,8 +109,8 @@ export async function GET(req: NextRequest) {
     const ethKey = process.env.ETHERSCAN_API_KEY
     const baseKey = process.env.BASESCAN_API_KEY ?? ethKey
     const [ethTokens, baseTokens] = await Promise.allSettled([
-      fetchTokenTx('https://api.etherscan.io/api', address, ethKey),
-      fetchTokenTx('https://api.basescan.org/api', address, baseKey),
+      fetchTokenTx('https://api.etherscan.io/api', address, 'eth', ethKey),
+      fetchTokenTx('https://api.basescan.org/api', address, 'base', baseKey),
     ])
 
     const all = new Map<string, TokenMeta>()
