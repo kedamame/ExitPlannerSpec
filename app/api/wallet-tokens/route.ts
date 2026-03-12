@@ -10,9 +10,11 @@ export interface TokenMeta {
   name: string
   decimals: number
   chain: 'eth' | 'base'
+  balance?: string    // human-readable balance (Ankr only) — skip on-chain balanceOf when present
+  usdValue?: number   // USD value (Ankr only)
 }
 
-// Ankr free API — returns all ERC-20 balances without an API key
+// Ankr free API — returns all ERC-20 balances including balance amounts
 async function fetchAnkrTokens(address: string): Promise<TokenMeta[]> {
   const res = await fetch('https://rpc.ankr.com/multichain', {
     method: 'POST',
@@ -40,6 +42,8 @@ async function fetchAnkrTokens(address: string): Promise<TokenMeta[]> {
     tokenName: string
     tokenDecimals: number
     blockchain: string
+    balance: string
+    balanceUsd: string
   }>)
     .filter((a) => a.tokenType === 'ERC20' && a.contractAddress)
     .map((a) => ({
@@ -48,6 +52,8 @@ async function fetchAnkrTokens(address: string): Promise<TokenMeta[]> {
       name: a.tokenName,
       decimals: a.tokenDecimals ?? 18,
       chain: a.blockchain === 'base' ? 'base' : 'eth',
+      balance: a.balance,
+      usdValue: parseFloat(a.balanceUsd ?? '0') || undefined,
     }))
 }
 
@@ -98,14 +104,14 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Try Ankr first (no API key required, returns full token list with chain info)
+    // Try Ankr first — returns balances directly, no on-chain calls needed in client
     const ankrTokens = await fetchAnkrTokens(address)
     if (ankrTokens.length > 0) {
       cache.set(cacheKey, { data: ankrTokens, ts: now })
       return NextResponse.json({ tokens: ankrTokens })
     }
 
-    // Fall back to Etherscan/Basescan
+    // Fall back to Etherscan/Basescan (no balance data, client will use useReadContracts)
     const ethKey = process.env.ETHERSCAN_API_KEY
     const baseKey = process.env.BASESCAN_API_KEY ?? ethKey
     const [ethTokens, baseTokens] = await Promise.allSettled([
