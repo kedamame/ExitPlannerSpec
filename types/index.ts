@@ -22,6 +22,7 @@ export interface CoinSearchResult {
   name: string
   symbol: string
   thumb: string
+  platform?: string  // CoinGecko platform id, e.g. 'ethereum', 'base'
 }
 
 export interface OHLCData {

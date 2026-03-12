@@ -21,6 +21,7 @@ async function lookupByContract(address: string, headers: HeadersInit) {
             name: data.name,
             symbol: (data.symbol ?? '').toUpperCase(),
             thumb: data.image?.thumb ?? '',
+            platform,
           }]
         }
       }

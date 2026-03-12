@@ -77,7 +77,32 @@ export function CoinSearch({ placeholder = 'Enter ticker or contract address' }:
                 <img src={coin.thumb} alt={coin.name} className="w-6 h-6 rounded-full" />
               )}
               <span className="font-medium text-white">{coin.symbol.toUpperCase()}</span>
-              <span className="text-gray-400 text-sm">{coin.name}</span>
+              <span className="text-gray-400 text-sm flex-1">{coin.name}</span>
+              {coin.platform && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium border shrink-0 ${
+                  coin.platform === 'base'
+                    ? 'bg-blue-600/20 text-blue-300 border-blue-600/30'
+                    : coin.platform === 'ethereum'
+                    ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                    : coin.platform === 'binance-smart-chain'
+                    ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                    : coin.platform === 'polygon-pos'
+                    ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+                    : coin.platform === 'arbitrum-one'
+                    ? 'bg-sky-500/20 text-sky-400 border-sky-500/30'
+                    : coin.platform === 'optimistic-ethereum'
+                    ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                    : 'bg-gray-600/20 text-gray-400 border-gray-600/30'
+                }`}>
+                  {coin.platform === 'ethereum' ? 'Ethereum'
+                    : coin.platform === 'base' ? 'Base'
+                    : coin.platform === 'binance-smart-chain' ? 'BNB'
+                    : coin.platform === 'polygon-pos' ? 'Polygon'
+                    : coin.platform === 'arbitrum-one' ? 'Arbitrum'
+                    : coin.platform === 'optimistic-ethereum' ? 'Optimism'
+                    : coin.platform}
+                </span>
+              )}
             </li>
           ))}
         </ul>
