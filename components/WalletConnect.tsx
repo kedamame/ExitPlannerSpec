@@ -96,37 +96,59 @@ export function WalletConnect({
       .finally(() => setLoadingList(false))
   }, [address])
 
-  // Read balanceOf for all tokens — specify chainId so Base tokens are queried on chain 8453
-  const contracts = address && tokenList.length > 0
-    ? tokenList.map((t) => ({
-        address: t.address as `0x${string}`,
-        abi: erc20Abi,
-        functionName: 'balanceOf' as const,
-        args: [address],
-        chainId: CHAIN_ID[t.chain],
-      }))
-    : []
+  // Split by chain so each useReadContracts targets the correct RPC
+  const ethTokens = tokenList.filter((t) => t.chain === 'eth')
+  const baseTokens = tokenList.filter((t) => t.chain === 'base')
 
-  const { data: balances, isLoading: balancesLoading } = useReadContracts({
-    contracts,
-    query: { enabled: contracts.length > 0 },
+  const makeContracts = (tokens: MergedToken[], chainId: number) =>
+    address && tokens.length > 0
+      ? tokens.map((t) => ({
+          address: t.address as `0x${string}`,
+          abi: erc20Abi,
+          functionName: 'balanceOf' as const,
+          args: [address],
+          chainId,
+        }))
+      : []
+
+  const ethContracts = makeContracts(ethTokens, CHAIN_ID.eth)
+  const baseContracts = makeContracts(baseTokens, CHAIN_ID.base)
+
+  const { data: ethBalances, isLoading: ethLoading } = useReadContracts({
+    contracts: ethContracts,
+    query: { enabled: ethContracts.length > 0 },
   })
+  const { data: baseBalances, isLoading: baseLoading } = useReadContracts({
+    contracts: baseContracts,
+    query: { enabled: baseContracts.length > 0 },
+  })
+
+  const balancesLoading = ethLoading || baseLoading
 
   // Filter non-zero balances and fetch prices
   useEffect(() => {
     if (!address) { setTokens([]); return }
-    if (!balances || balancesLoading || tokenList.length === 0) return
+    if (balancesLoading || tokenList.length === 0) return
+    if (ethContracts.length > 0 && !ethBalances) return
+    if (baseContracts.length > 0 && !baseBalances) return
     setLoadingPrices(true)
 
-    const nonZero = tokenList.map((t, i) => {
-      const result = balances[i]
-      if (result?.status !== 'success') return null
-      const raw = result.result as bigint
-      if (raw === 0n) return null
-      const fmt = parseFloat(formatUnits(raw, t.decimals))
-      if (fmt < 0.0001) return null
-      return { ...t, balanceNum: fmt }
-    }).filter(Boolean) as (MergedToken & { balanceNum: number })[]
+    function extractNonZero(tokens: MergedToken[], balances: typeof ethBalances) {
+      return tokens.map((t, i) => {
+        const result = balances?.[i]
+        if (result?.status !== 'success') return null
+        const raw = result.result as bigint
+        if (raw === 0n) return null
+        const fmt = parseFloat(formatUnits(raw, t.decimals))
+        if (fmt < 0.0001) return null
+        return { ...t, balanceNum: fmt }
+      }).filter(Boolean) as (MergedToken & { balanceNum: number })[]
+    }
+
+    const nonZero = [
+      ...extractNonZero(ethTokens, ethBalances),
+      ...extractNonZero(baseTokens, baseBalances),
+    ]
 
     if (nonZero.length === 0) {
       setTokens([])
@@ -168,7 +190,7 @@ export function WalletConnect({
         }))
       })
       .finally(() => setLoadingPrices(false))
-  }, [address, balances, balancesLoading, tokenList])
+  }, [address, ethBalances, baseBalances, balancesLoading, tokenList]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const isLoading = loadingList || balancesLoading || loadingPrices
 

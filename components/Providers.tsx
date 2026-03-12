@@ -8,8 +8,8 @@ import { useState } from 'react'
 const wagmiConfig = createConfig({
   chains: [mainnet, base],
   transports: {
-    [mainnet.id]: http(),
-    [base.id]: http(),
+    [mainnet.id]: http('https://rpc.ankr.com/eth'),
+    [base.id]: http('https://mainnet.base.org'),
   },
 })
 
