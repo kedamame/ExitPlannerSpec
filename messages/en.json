@@ -1,0 +1,37 @@
+{
+  "home": {
+    "title": "Exit Planner",
+    "subtitle": "Set your exit strategy for held coins",
+    "searchPlaceholder": "Enter ticker or contract address",
+    "connectEVM": "Connect EVM Wallet",
+    "connectSolana": "Connect Solana Wallet",
+    "walletTokens": "Held Tokens",
+    "disconnect": "Disconnect"
+  },
+  "chart": {
+    "currentPrice": "Current Price",
+    "alertOn": "Alert ON",
+    "alertOff": "Alert OFF",
+    "addLine": "+ Add Line",
+    "takeProfitLines": "Take Profit Lines",
+    "stopLossLines": "Stop Loss Lines",
+    "share": "Share as Cast",
+    "noLines": "No lines"
+  },
+  "modal": {
+    "addLine": "Add Line",
+    "type": "Type",
+    "takeProfit": "Take Profit",
+    "stopLoss": "Stop Loss",
+    "price": "Price (USD)",
+    "cancel": "Cancel",
+    "add": "Add"
+  },
+  "timeframe": {
+    "1H": "1H",
+    "4H": "4H",
+    "1D": "1D",
+    "1W": "1W",
+    "1M": "1M"
+  }
+}

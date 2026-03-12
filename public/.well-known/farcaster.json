@@ -1,0 +1,16 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjEsInR5cGUiOiJjdXN0b2R5IiwKImtleSI6IjB4MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMSJ9",
+    "payload": "eyJkb21haW4iOiJleGl0LXBsYW5uZXIudmVyY2VsLmFwcCJ9",
+    "signature": "TODO_REPLACE_WITH_REAL_SIGNATURE"
+  },
+  "frame": {
+    "version": "1",
+    "name": "Exit Planner",
+    "iconUrl": "https://exit-planner.vercel.app/icon.png",
+    "splashImageUrl": "https://exit-planner.vercel.app/splash.png",
+    "splashBackgroundColor": "#0f0f23",
+    "homeUrl": "https://exit-planner.vercel.app",
+    "webhookUrl": "https://exit-planner.vercel.app/api/webhook"
+  }
+}

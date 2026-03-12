@@ -1,0 +1,37 @@
+{
+  "home": {
+    "title": "Exit Planner",
+    "subtitle": "保有コインの出口戦略を設定しよう",
+    "searchPlaceholder": "ティッカーまたはコントラクトアドレスを入力",
+    "connectEVM": "EVMウォレット接続",
+    "connectSolana": "Solanaウォレット接続",
+    "walletTokens": "保有トークン",
+    "disconnect": "切断"
+  },
+  "chart": {
+    "currentPrice": "現在価格",
+    "alertOn": "アラートON",
+    "alertOff": "アラートOFF",
+    "addLine": "+ ラインを追加",
+    "takeProfitLines": "利確ライン",
+    "stopLossLines": "損切りライン",
+    "share": "castで共有",
+    "noLines": "ラインなし"
+  },
+  "modal": {
+    "addLine": "ラインを追加",
+    "type": "種別",
+    "takeProfit": "利確",
+    "stopLoss": "損切り",
+    "price": "価格 (USD)",
+    "cancel": "キャンセル",
+    "add": "追加"
+  },
+  "timeframe": {
+    "1H": "1時間",
+    "4H": "4時間",
+    "1D": "1日",
+    "1W": "1週",
+    "1M": "1ヶ月"
+  }
+}
