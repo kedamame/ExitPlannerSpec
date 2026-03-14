@@ -264,7 +264,8 @@ export function WalletConnect({
           </div>
         ) : tokens.length > 0 ? (
           <div>
-            <p className="text-xs text-gray-500 mb-2">{walletTokensLabel} ({tokens.length})</p>
+            <p className="text-xs text-gray-500 mb-1">{walletTokensLabel} ({tokens.length})</p>
+            <p className="text-[10px] text-gray-600 mb-2">* 過去24時間以内に受け取ったことがないトークンは表示されない場合があります</p>
             <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
               {tokens.map((t, i) => {
                 const badge = CHAIN_BADGE[t.chain]
