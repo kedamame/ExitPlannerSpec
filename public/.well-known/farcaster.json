@@ -8,6 +8,8 @@
     "version": "1",
     "name": "Exit Planner",
     "iconUrl": "https://exit-planner-spec.vercel.app/icon.png",
+    "imageUrl": "https://exit-planner-spec.vercel.app/api/og?coin=bitcoin&price=100000&tp=110000&sl=90000",
+    "buttonTitle": "Open Exit Planner",
     "splashImageUrl": "https://exit-planner-spec.vercel.app/splash.png",
     "splashBackgroundColor": "#0f0f23",
     "homeUrl": "https://exit-planner-spec.vercel.app",
