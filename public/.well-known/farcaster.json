@@ -7,10 +7,10 @@
   "frame": {
     "version": "1",
     "name": "Exit Planner",
-    "iconUrl": "https://exit-planner.vercel.app/icon.png",
-    "splashImageUrl": "https://exit-planner.vercel.app/splash.png",
+    "iconUrl": "https://exit-planner-spec.vercel.app/icon.png",
+    "splashImageUrl": "https://exit-planner-spec.vercel.app/splash.png",
     "splashBackgroundColor": "#0f0f23",
-    "homeUrl": "https://exit-planner.vercel.app",
-    "webhookUrl": "https://exit-planner.vercel.app/api/webhook"
+    "homeUrl": "https://exit-planner-spec.vercel.app",
+    "webhookUrl": "https://exit-planner-spec.vercel.app/api/webhook"
   }
 }
