@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://exit-planner-spec.vercel.app";
-const previewImageUrl = `${appUrl}/api/og?coin=bitcoin&price=100000&tp=110000&sl=90000`;
+const previewImageUrl = `${appUrl}/preview.png`;
 
 export const metadata: Metadata = {
   title: "Exit Planner",
