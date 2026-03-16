@@ -13,7 +13,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://exit-planner.vercel.app";
+const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://exit-planner-spec.vercel.app";
+const previewImageUrl = `${appUrl}/api/og?coin=bitcoin&price=100000&tp=110000&sl=90000`;
 
 export const metadata: Metadata = {
   title: "Exit Planner",
@@ -21,13 +22,22 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Exit Planner",
     description: "Set your exit strategy for held coins",
-    images: [`${appUrl}/api/og`],
+    images: [previewImageUrl],
   },
   other: {
     "fc:frame": JSON.stringify({
       version: "next",
-      imageUrl: `${appUrl}/api/og`,
-      button: { title: "Open Exit Planner", action: { type: "launch_frame", url: appUrl } },
+      imageUrl: previewImageUrl,
+      button: {
+        title: "Open Exit Planner",
+        action: {
+          type: "launch_frame",
+          name: "Exit Planner",
+          url: appUrl,
+          splashImageUrl: `${appUrl}/splash.png`,
+          splashBackgroundColor: "#0f0f23",
+        },
+      },
     }),
   },
 };
