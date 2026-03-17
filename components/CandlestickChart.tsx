@@ -14,7 +14,8 @@ interface Props {
   currentPrice: number
   timeframe: Timeframe
   onTimeframeChange: (tf: Timeframe) => void
-  // TODO: onLinePriceChange — drag-to-update line price (not yet supported by lightweight-charts v5)
+  addMode?: 'off' | 'tp' | 'sl'
+  onChartAddLine?: (type: 'takeProfit' | 'stopLoss', price: number) => void
 }
 
 const TIMEFRAMES: Timeframe[] = ['1H', '4H', '1D', '1W', '1M']
@@ -25,6 +26,8 @@ export function CandlestickChart({
   currentPrice,
   timeframe,
   onTimeframeChange,
+  addMode = 'off',
+  onChartAddLine,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<LWChart>(null)
@@ -120,6 +123,23 @@ export function CandlestickChart({
     })
   }, [currentPrice, chartReady])
 
+  // Chart click → add line at tapped price
+  useEffect(() => {
+    if (!chartReady || !chartRef.current || !seriesRef.current || addMode === 'off' || !onChartAddLine) return
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handler = (param: any) => {
+      if (!param.point || !seriesRef.current) return
+      const price = seriesRef.current.coordinateToPrice(param.point.y)
+      if (price === null || price <= 0) return
+      const rounded = Math.round(price * 100000) / 100000
+      onChartAddLine(addMode === 'tp' ? 'takeProfit' : 'stopLoss', rounded)
+    }
+
+    chartRef.current.subscribeClick(handler)
+    return () => { chartRef.current?.unsubscribeClick(handler) }
+  }, [chartReady, addMode, onChartAddLine])
+
   // Update TP/SL lines
   useEffect(() => {
     if (!chartReady || !seriesRef.current) return
@@ -158,8 +178,23 @@ export function CandlestickChart({
         ))}
       </div>
 
+      {/* Add-mode hint banner */}
+      {addMode !== 'off' && (
+        <div className={`text-center text-xs py-1 mb-1 rounded-lg font-medium ${
+          addMode === 'tp'
+            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+            : 'bg-red-500/20 text-red-400 border border-red-500/30'
+        }`}>
+          {addMode === 'tp' ? '📍 タップして利確ラインを追加' : '📍 タップして損切りラインを追加'}
+        </div>
+      )}
+
       {/* Chart container */}
-      <div ref={containerRef} className="flex-1 w-full rounded-xl overflow-hidden" />
+      <div
+        ref={containerRef}
+        className="flex-1 w-full rounded-xl overflow-hidden"
+        style={{ cursor: addMode !== 'off' ? 'crosshair' : 'default' }}
+      />
     </div>
   )
 }

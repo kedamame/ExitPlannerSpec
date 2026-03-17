@@ -76,6 +76,9 @@ export default function ChartPage() {
   const [showModal, setShowModal] = useState(false)
   const [bottomOpen, setBottomOpen] = useState(false)
   const [coinInfo, setCoinInfo] = useState({ name: coinId, symbol: '' })
+  const [addMode, setAddMode] = useState<'off' | 'tp' | 'sl'>('off')
+
+  const toggleAddMode = (mode: 'tp' | 'sl') => setAddMode((m) => m === mode ? 'off' : mode)
 
   const t = messages[locale] ?? messages.en
   const { price, loading: priceLoading } = useCurrentPrice(coinId)
@@ -200,6 +203,8 @@ export default function ChartPage() {
               currentPrice={price}
               timeframe={timeframe}
               onTimeframeChange={setTimeframe}
+              addMode={addMode}
+              onChartAddLine={(type, p) => { addLine(type, p); setAddMode('off') }}
             />
           )}
         </div>
@@ -227,12 +232,26 @@ export default function ChartPage() {
               <span className="ml-auto text-gray-500 text-xs">{bottomOpen ? '▼' : '▲'}</span>
             </button>
 
-            {/* Add line */}
+            {/* Draw-mode toggle buttons */}
             <button
-              onClick={() => setShowModal(true)}
-              className="bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium px-3 py-2 rounded-lg transition shrink-0"
+              onClick={() => toggleAddMode('tp')}
+              className={`text-xs font-bold px-2.5 py-2 rounded-lg transition shrink-0 ${
+                addMode === 'tp'
+                  ? 'bg-green-500 text-black'
+                  : 'bg-green-500/20 text-green-400 border border-green-500/30'
+              }`}
             >
-              {t.addLine}
+              +TP
+            </button>
+            <button
+              onClick={() => toggleAddMode('sl')}
+              className={`text-xs font-bold px-2.5 py-2 rounded-lg transition shrink-0 ${
+                addMode === 'sl'
+                  ? 'bg-red-500 text-white'
+                  : 'bg-red-500/20 text-red-400 border border-red-500/30'
+              }`}
+            >
+              +SL
             </button>
 
             {/* Share */}
@@ -277,6 +296,8 @@ export default function ChartPage() {
               currentPrice={price}
               timeframe={timeframe}
               onTimeframeChange={setTimeframe}
+              addMode={addMode}
+              onChartAddLine={(type, p) => { addLine(type, p); setAddMode('off') }}
             />
           )}
         </div>
@@ -292,6 +313,29 @@ export default function ChartPage() {
               noLines: t.noLines,
             }}
           />
+          {/* Draw-mode toggles */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => toggleAddMode('tp')}
+              className={`flex-1 text-xs font-bold py-2 rounded-lg transition ${
+                addMode === 'tp'
+                  ? 'bg-green-500 text-black'
+                  : 'bg-green-500/20 text-green-400 border border-green-500/30'
+              }`}
+            >
+              {addMode === 'tp' ? '✕ TP' : '+TP'}
+            </button>
+            <button
+              onClick={() => toggleAddMode('sl')}
+              className={`flex-1 text-xs font-bold py-2 rounded-lg transition ${
+                addMode === 'sl'
+                  ? 'bg-red-500 text-white'
+                  : 'bg-red-500/20 text-red-400 border border-red-500/30'
+              }`}
+            >
+              {addMode === 'sl' ? '✕ SL' : '+SL'}
+            </button>
+          </div>
           <div className="mt-auto pt-4 border-t border-gray-800">
             <ShareButton
               position={currentPosition}
