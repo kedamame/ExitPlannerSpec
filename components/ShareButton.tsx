@@ -9,9 +9,10 @@ interface Props {
   currentPrice: number
   locale?: string
   label?: string
+  compact?: boolean
 }
 
-export function ShareButton({ position, currentPrice, locale = 'en', label = 'Share as Cast' }: Props) {
+export function ShareButton({ position, currentPrice, locale = 'en', label = 'Share as Cast', compact }: Props) {
   const [sharing, setSharing] = useState(false)
 
   const handleShare = async () => {
@@ -40,11 +41,30 @@ export function ShareButton({ position, currentPrice, locale = 'en', label = 'Sh
     }
   }
 
+  if (compact) {
+    return (
+      <button
+        onClick={handleShare}
+        disabled={sharing}
+        className="flex items-center justify-center bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg w-10 h-9 transition shrink-0"
+        aria-label={label}
+      >
+        {sharing ? (
+          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
+      </button>
+    )
+  }
+
   return (
     <button
       onClick={handleShare}
       disabled={sharing}
-      className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-xl px-5 py-2.5 font-medium text-sm transition"
+      className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-xl px-5 py-2.5 font-medium text-sm transition w-full justify-center"
     >
       {sharing ? (
         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
