@@ -12,6 +12,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { useCurrentPrice, useOHLC } from '@/hooks/useCoinGecko'
 import { usePriceAlert, requestNotificationPermission } from '@/hooks/usePriceAlert'
 import type { Position, PriceLine, LineType, Timeframe } from '@/types'
+import { formatPrice } from '@/lib/formatPrice'
 
 const CandlestickChart = dynamic(
   () => import('@/components/CandlestickChart').then((m) => m.CandlestickChart),
@@ -174,7 +175,7 @@ export default function ChartPage() {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-yellow-400 font-bold text-sm">
-            {priceLoading ? '...' : `$${price.toLocaleString()}`}
+            {priceLoading ? '...' : formatPrice(price)}
           </span>
           <button
             onClick={handleAlertToggle}

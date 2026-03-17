@@ -1,6 +1,7 @@
 'use client'
 
 import type { PriceLine } from '@/types'
+import { formatPrice } from '@/lib/formatPrice'
 
 interface Props {
   lines: PriceLine[]
@@ -34,7 +35,7 @@ export function LinePanel({ lines, onRemove, onAddClick, compact, labels }: Prop
         {items.map((line) => (
           <li key={line.id} className="flex items-center justify-between group">
             <span className={`text-sm ${color === 'green' ? 'text-green-300' : 'text-red-300'}`}>
-              ${line.price.toLocaleString()}
+              {formatPrice(line.price)}
             </span>
             <button
               onClick={() => onRemove(line.id)}

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { OHLCData, PriceLine, Timeframe } from '@/types'
+import { formatPrice } from '@/lib/formatPrice'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type LWChart = any
@@ -119,7 +120,7 @@ export function CandlestickChart({
       color: '#fbbf24',
       lineWidth: 1,
       lineStyle: 2,
-      title: `$${currentPrice.toLocaleString()}`,
+      title: formatPrice(currentPrice),
     })
   }, [currentPrice, chartReady])
 
@@ -153,7 +154,7 @@ export function CandlestickChart({
         color: line.type === 'takeProfit' ? '#22c55e' : '#ef4444',
         lineWidth: 2,
         lineStyle: 0,
-        title: `${line.type === 'takeProfit' ? 'TP' : 'SL'} $${line.price.toLocaleString()}`,
+        title: `${line.type === 'takeProfit' ? 'TP' : 'SL'} ${formatPrice(line.price)}`,
       })
       priceLineRefs.current.set(line.id, pl)
     }
