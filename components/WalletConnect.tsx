@@ -45,8 +45,8 @@ function getKnown(address: string) {
 const CHAIN_ID: Record<Chain, number> = { eth: 1, base: 8453 }
 
 const CHAIN_BADGE: Record<Chain, { label: string; className: string }> = {
-  eth: { label: 'ERC-20', className: 'bg-blue-500/20 text-blue-400 border border-blue-500/30' },
-  base: { label: 'ERC-20', className: 'bg-blue-600/20 text-blue-300 border border-blue-600/30' },
+  eth:  { label: 'ERC-20', className: 'bg-blue-500/20 text-blue-400 border border-blue-500/30' },
+  base: { label: 'Base',   className: 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' },
 }
 
 export function WalletConnect({
