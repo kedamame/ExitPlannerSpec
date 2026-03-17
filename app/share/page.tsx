@@ -8,6 +8,7 @@ interface Props {
     price?: string
     tp?: string
     sl?: string
+    chain?: string
   }>
 }
 
@@ -17,6 +18,7 @@ const BASE_URL =
 const COIN_ID_RE = /^[a-z0-9-]{1,64}$/
 const SAFE_RE = /^[\w\s\-.()#$%&@!?:,]{1,64}$/
 const NUM_RE = /^[\d.,]{1,80}$/
+const CHAIN_RE = /^[a-z0-9]{1,20}$/
 
 function safe(v: string | undefined, re: RegExp, fallback: string) {
   return v && re.test(v) ? v : fallback
@@ -44,8 +46,9 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const price      = safe(sp.price,      NUM_RE,     '0')
   const tp         = safe(sp.tp,         NUM_RE,     '')
   const sl         = safe(sp.sl,         NUM_RE,     '')
+  const chain      = safe(sp.chain,      CHAIN_RE,   '')
 
-  const ogUrl = `${BASE_URL}/api/og?coinId=${encodeURIComponent(coinId)}&coinName=${encodeURIComponent(coinName)}&coinSymbol=${encodeURIComponent(coinSymbol)}&price=${price}&tp=${encodeURIComponent(tp)}&sl=${encodeURIComponent(sl)}`
+  const ogUrl = `${BASE_URL}/api/og?coinId=${encodeURIComponent(coinId)}&coinName=${encodeURIComponent(coinName)}&coinSymbol=${encodeURIComponent(coinSymbol)}&price=${price}&tp=${encodeURIComponent(tp)}&sl=${encodeURIComponent(sl)}&chain=${encodeURIComponent(chain)}`
   const appUrl = `${BASE_URL}/chart/${coinId}`
 
   const tpLabel = tp ? `TP: $${tp.split(',')[0]}` : ''

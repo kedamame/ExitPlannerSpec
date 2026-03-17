@@ -50,6 +50,13 @@ export async function GET(req: NextRequest) {
   const tpList     = sanitizePrices(sp.get('tp')).sort((a, b) => b - a)
   const slList     = sanitizePrices(sp.get('sl')).sort((a, b) => b - a)
 
+  const chainRaw = sp.get('chain') ?? ''
+  const chain = /^[a-z0-9]{1,20}$/.test(chainRaw) ? chainRaw : ''
+  const chainLabel = chain === 'base' ? 'Base' : chain === 'eth' ? 'ETH' : chain ? chain.toUpperCase() : ''
+  const chainColor = chain === 'base' ? { bg: 'rgba(99,102,241,0.25)', border: '#6366f1', text: '#a5b4fc' }
+                   : chain === 'eth'  ? { bg: 'rgba(59,130,246,0.25)', border: '#3b82f6', text: '#93c5fd' }
+                   : null
+
   // All price levels sorted high → low
   type Level = { price: number; type: 'tp' | 'current' | 'sl' }
   const levels: Level[] = [
@@ -114,6 +121,18 @@ export async function GET(req: NextRequest) {
               Exit Planner
             </div>
             <span style={{ fontSize: 44, fontWeight: 900, color: 'white' }}>{coinSymbol}</span>
+            {chainLabel && chainColor && (
+              <div style={{
+                display: 'flex',
+                background: chainColor.bg,
+                border: `1.5px solid ${chainColor.border}`,
+                borderRadius: 8,
+                paddingLeft: 12, paddingRight: 12, paddingTop: 4, paddingBottom: 4,
+                fontSize: 16, fontWeight: 700, color: chainColor.text,
+              }}>
+                {chainLabel}
+              </div>
+            )}
             <span style={{ fontSize: 22, color: '#5555aa' }}>{coinName}</span>
           </div>
           {price > 0 && (

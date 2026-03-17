@@ -24,7 +24,7 @@ export function ShareButton({ position, currentPrice, locale = 'en', label = 'Sh
       // /share page has og:image + fc:frame meta tags — Farcaster renders it as a rich embed
       // Add timestamp to bust Farcaster's URL-level cache
       const ts = Math.floor(Date.now() / 60000) // changes every minute
-      const shareUrl = `${appUrl}/share?coinId=${encodeURIComponent(position.coinId)}&coinName=${encodeURIComponent(position.coinName)}&coinSymbol=${encodeURIComponent(position.coinSymbol)}&price=${currentPrice}&tp=${encodeURIComponent(tpPrices)}&sl=${encodeURIComponent(slPrices)}&t=${ts}`
+      const shareUrl = `${appUrl}/share?coinId=${encodeURIComponent(position.coinId)}&coinName=${encodeURIComponent(position.coinName)}&coinSymbol=${encodeURIComponent(position.coinSymbol)}&price=${currentPrice}&tp=${encodeURIComponent(tpPrices)}&sl=${encodeURIComponent(slPrices)}&chain=${encodeURIComponent(position.chain ?? '')}&t=${ts}`
       const castText = buildCastText(position, locale)
 
       // Try Farcaster SDK if available
