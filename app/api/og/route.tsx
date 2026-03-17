@@ -172,20 +172,21 @@ export async function GET(req: NextRequest) {
                   gap: 0,
                 }}>
                   {/* Left: label badge + price */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, width: 320 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, width: 340 }}>
                     <div style={{
                       display: 'flex',
                       background: colors[level.type],
-                      color: level.type === 'tp' ? '#000' : '#fff',
-                      fontSize: 14, fontWeight: 800,
-                      paddingLeft: 12, paddingRight: 12, paddingTop: 4, paddingBottom: 4,
-                      borderRadius: 8,
-                      minWidth: 52,
+                      color: (level.type === 'tp' || level.type === 'current') ? '#000' : '#fff',
+                      fontSize: 20, fontWeight: 900,
+                      paddingLeft: 16, paddingRight: 16, paddingTop: 7, paddingBottom: 7,
+                      borderRadius: 10,
+                      minWidth: 76,
                       justifyContent: 'center',
+                      letterSpacing: 1,
                     }}>
                       {labelText[level.type]}
                     </div>
-                    <span style={{ fontSize: 28, fontWeight: 800, color: textColors[level.type] }}>
+                    <span style={{ fontSize: 32, fontWeight: 800, color: textColors[level.type] }}>
                       {fmt(level.price)}
                     </span>
                   </div>
@@ -195,20 +196,19 @@ export async function GET(req: NextRequest) {
                     flex: 1,
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: level.type === 'current' ? 'flex-start' : 'flex-start',
                     gap: 8,
                   }}>
                     {level.type !== 'current' ? (
                       <div style={{
-                        height: 12,
+                        height: 16,
                         width: bw,
                         background: `linear-gradient(to right, ${colors[level.type]}, ${colors[level.type]}44)`,
-                        borderRadius: 6,
+                        borderRadius: 8,
                         maxWidth: BAR_MAX,
                       }} />
                     ) : (
                       <div style={{
-                        height: 3,
+                        height: 4,
                         width: 240,
                         background: '#fbbf2466',
                         borderRadius: 2,
@@ -217,16 +217,16 @@ export async function GET(req: NextRequest) {
                   </div>
 
                   {/* Right: % diff */}
-                  <div style={{ width: 120, display: 'flex', justifyContent: 'flex-end' }}>
+                  <div style={{ width: 130, display: 'flex', justifyContent: 'flex-end' }}>
                     {pctStr ? (
                       <span style={{
-                        fontSize: 20, fontWeight: 700,
+                        fontSize: 24, fontWeight: 800,
                         color: isAbove ? '#4ade80' : '#f87171',
                       }}>
                         {pctStr}
                       </span>
                     ) : (
-                      <span style={{ fontSize: 14, color: '#44446a' }}>current</span>
+                      <span style={{ fontSize: 16, color: '#44446a' }}>current</span>
                     )}
                   </div>
                 </div>
