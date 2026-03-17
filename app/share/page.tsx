@@ -22,11 +22,25 @@ function safe(v: string | undefined, re: RegExp, fallback: string) {
   return v && re.test(v) ? v : fallback
 }
 
+function prettifyId(id: string) {
+  return id.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const sp = await searchParams
-  const coinId     = safe(sp.coinId,     COIN_ID_RE, '')
-  const coinName   = safe(sp.coinName,   SAFE_RE,    'Token')
-  const coinSymbol = safe(sp.coinSymbol, SAFE_RE,    '???')
+  const coinId = safe(sp.coinId, COIN_ID_RE, '')
+
+  // Derive fallbacks from coinId so we never show "???" or the raw slug
+  const symbolFallback = coinId ? coinId.split('-')[0].toUpperCase().slice(0, 8) : '???'
+  const nameFallback   = coinId ? prettifyId(coinId) : 'Token'
+
+  // Reject placeholder "???" that may have been passed from an earlier bug
+  const rawSymbol = sp.coinSymbol
+  const coinSymbol = (rawSymbol && rawSymbol !== '???' && SAFE_RE.test(rawSymbol))
+    ? rawSymbol : symbolFallback
+  const rawName = sp.coinName
+  const coinName = (rawName && rawName !== coinId && SAFE_RE.test(rawName))
+    ? rawName : nameFallback
   const price      = safe(sp.price,      NUM_RE,     '0')
   const tp         = safe(sp.tp,         NUM_RE,     '')
   const sl         = safe(sp.sl,         NUM_RE,     '')

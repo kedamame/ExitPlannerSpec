@@ -17,8 +17,13 @@ function sanitizePrices(raw: string | null, limit = 5): number[] {
 }
 function fmt(n: number) {
   if (n >= 1_000_000) return '$' + (n / 1_000_000).toFixed(2) + 'M'
-  if (n >= 1_000)     return '$' + n.toLocaleString()
-  if (n >= 1)         return '$' + n.toFixed(2)
+  if (n >= 1_000)     return '$' + Math.round(n).toLocaleString()
+  if (n >= 1) {
+    // Keep up to 4 decimal places, strip trailing zeros, min 2dp
+    const s = n.toFixed(4).replace(/0+$/, '')
+    const dp = s.includes('.') ? s.split('.')[1].length : 0
+    return '$' + n.toFixed(Math.max(2, dp))
+  }
   return '$' + n.toPrecision(4)
 }
 function pct(a: number, base: number) {
