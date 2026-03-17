@@ -3,11 +3,13 @@ import { NextRequest, NextResponse } from 'next/server'
 const cache = new Map<string, { data: unknown; ts: number }>()
 const CACHE_TTL = 30000
 const CONTRACT_RE = /^0x[0-9a-fA-F]{40}$/
+const SOLANA_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
 // CoinGecko platform IDs to try for contract address lookups
 const EVM_PLATFORMS = ['ethereum', 'base', 'binance-smart-chain', 'polygon-pos', 'arbitrum-one', 'optimistic-ethereum']
 
 async function lookupByContract(address: string, headers: HeadersInit) {
-  for (const platform of EVM_PLATFORMS) {
+  const platforms = SOLANA_RE.test(address) ? ['solana'] : EVM_PLATFORMS
+  for (const platform of platforms) {
     try {
       const res = await fetch(
         `https://api.coingecko.com/api/v3/coins/${platform}/contract/${address.toLowerCase()}`,
@@ -50,8 +52,8 @@ export async function GET(req: NextRequest) {
   try {
     let coins: unknown[]
 
-    if (CONTRACT_RE.test(query)) {
-      // Contract address lookup
+    if (CONTRACT_RE.test(query) || SOLANA_RE.test(query)) {
+      // Contract address lookup (EVM 0x… or Solana base58)
       coins = await lookupByContract(query, headers)
     } else {
       // Ticker / name search

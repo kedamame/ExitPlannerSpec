@@ -52,9 +52,10 @@ export async function GET(req: NextRequest) {
 
   const chainRaw = sp.get('chain') ?? ''
   const chain = /^[a-z0-9]{1,20}$/.test(chainRaw) ? chainRaw : ''
-  const chainLabel = chain === 'base' ? 'Base' : chain === 'eth' ? 'ETH' : chain ? chain.toUpperCase() : ''
-  const chainColor = chain === 'base' ? { bg: 'rgba(99,102,241,0.25)', border: '#6366f1', text: '#a5b4fc' }
-                   : chain === 'eth'  ? { bg: 'rgba(59,130,246,0.25)', border: '#3b82f6', text: '#93c5fd' }
+  const chainLabel = chain === 'base' ? 'Base' : chain === 'eth' ? 'ETH' : chain === 'solana' ? 'Solana' : chain ? chain.toUpperCase() : ''
+  const chainColor = chain === 'base'   ? { bg: 'rgba(99,102,241,0.25)',  border: '#6366f1', text: '#a5b4fc' }
+                   : chain === 'eth'    ? { bg: 'rgba(59,130,246,0.25)',  border: '#3b82f6', text: '#93c5fd' }
+                   : chain === 'solana' ? { bg: 'rgba(168,85,247,0.25)',  border: '#a855f7', text: '#d8b4fe' }
                    : null
 
   // All price levels sorted high → low

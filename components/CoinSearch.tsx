@@ -84,6 +84,8 @@ export function CoinSearch({ placeholder = 'Enter ticker or contract address' }:
                     ? 'bg-blue-600/20 text-blue-300 border-blue-600/30'
                     : coin.platform === 'ethereum'
                     ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                    : coin.platform === 'solana'
+                    ? 'bg-purple-500/20 text-purple-400 border-purple-500/30'
                     : coin.platform === 'binance-smart-chain'
                     ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                     : coin.platform === 'polygon-pos'
@@ -96,6 +98,7 @@ export function CoinSearch({ placeholder = 'Enter ticker or contract address' }:
                 }`}>
                   {coin.platform === 'ethereum' ? 'Ethereum'
                     : coin.platform === 'base' ? 'Base'
+                    : coin.platform === 'solana' ? 'Solana'
                     : coin.platform === 'binance-smart-chain' ? 'BNB'
                     : coin.platform === 'polygon-pos' ? 'Polygon'
                     : coin.platform === 'arbitrum-one' ? 'Arbitrum'
