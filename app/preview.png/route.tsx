@@ -3,146 +3,122 @@ import { ImageResponse } from 'next/og'
 export const runtime = 'edge'
 export const contentType = 'image/png'
 
+// Farcaster mini app embed requires 3:2 aspect ratio (1200×800)
 export function GET() {
   return new ImageResponse(
     (
       <div
         style={{
           width: 1200,
-          height: 630,
-          background: '#0a0a1a',
+          height: 800,
+          background: '#080818',
           display: 'flex',
+          flexDirection: 'column',
           fontFamily: 'sans-serif',
         }}
       >
-        {/* Left panel */}
+        {/* Top section: title + subtitle */}
         <div
           style={{
-            width: 560,
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'center',
-            paddingLeft: 80,
-            paddingRight: 40,
-            gap: 18,
+            alignItems: 'center',
+            paddingTop: 80,
+            paddingBottom: 48,
+            gap: 16,
           }}
         >
-          {/* Title */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            <span style={{ fontSize: 78, fontWeight: 900, color: 'white', letterSpacing: -2, lineHeight: 1.05 }}>
-              Exit
-            </span>
-            <span style={{ fontSize: 78, fontWeight: 900, color: 'white', letterSpacing: -2, lineHeight: 1.05 }}>
-              Planner
-            </span>
+          <div style={{ display: 'flex', fontSize: 88, fontWeight: 900, color: 'white', letterSpacing: -3 }}>
+            Exit Planner
           </div>
-
-          {/* Subtitle */}
-          <div style={{ display: 'flex', fontSize: 21, color: '#7878a8' }}>
-            Crypto TP / SL strategy tool
-          </div>
-
-          {/* Features */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 6 }}>
-            {[
-              '📈  Candlestick Chart',
-              '🎯  Take Profit & Stop Loss',
-              '🔔  Price Alerts',
-              '🚀  Share on Farcaster',
-            ].map((label) => (
-              <div key={label} style={{ display: 'flex', fontSize: 19, color: '#b0b0d0' }}>
-                {label}
-              </div>
-            ))}
+          <div style={{ display: 'flex', fontSize: 28, color: '#8888bb', letterSpacing: 1 }}>
+            Set TP / SL lines on any crypto chart
           </div>
         </div>
 
-        {/* Divider */}
-        <div style={{
-          width: 1,
-          display: 'flex',
-          background: 'rgba(124,58,237,0.5)',
-        }} />
-
-        {/* Right panel */}
+        {/* Chart mockup */}
         <div
           style={{
             flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
+            marginLeft: 80,
+            marginRight: 80,
+            marginBottom: 60,
             background: '#0d0d22',
+            borderRadius: 16,
+            display: 'flex',
             position: 'relative',
+            overflow: 'hidden',
           }}
         >
           {/* TP line */}
           <div style={{
             position: 'absolute',
-            top: 110,
+            top: 90,
             left: 0,
             right: 0,
-            height: 1,
+            height: 2,
             background: '#22c55e',
             display: 'flex',
-            justifyContent: 'flex-end',
-            alignItems: 'flex-start',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
           }}>
             <div style={{
               display: 'flex',
               background: '#22c55e',
               color: '#000',
-              fontSize: 13,
+              fontSize: 15,
               fontWeight: 800,
-              paddingTop: 3,
-              paddingBottom: 3,
-              paddingLeft: 10,
-              paddingRight: 10,
-              borderRadius: 5,
-              marginRight: 14,
+              paddingTop: 4,
+              paddingBottom: 4,
+              paddingLeft: 12,
+              paddingRight: 12,
+              borderRadius: 6,
+              marginLeft: 16,
               marginTop: 4,
             }}>
               TP $110,000
             </div>
           </div>
 
-          {/* Price label */}
+          {/* Price center */}
           <div style={{
             position: 'absolute',
-            top: 220,
+            top: 160,
             left: 0,
             right: 0,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 6,
+            gap: 8,
           }}>
-            <div style={{ display: 'flex', fontSize: 14, color: '#505070', letterSpacing: 3 }}>BTC / USD</div>
-            <div style={{ display: 'flex', fontSize: 42, fontWeight: 800, color: '#fbbf24' }}>$100,000</div>
+            <div style={{ display: 'flex', fontSize: 15, color: '#4a4a70', letterSpacing: 4 }}>BTC / USD</div>
+            <div style={{ display: 'flex', fontSize: 52, fontWeight: 800, color: '#fbbf24' }}>$100,000</div>
           </div>
 
           {/* SL line */}
           <div style={{
             position: 'absolute',
-            top: 420,
+            top: 310,
             left: 0,
             right: 0,
-            height: 1,
+            height: 2,
             background: '#ef4444',
             display: 'flex',
-            justifyContent: 'flex-end',
-            alignItems: 'flex-start',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
           }}>
             <div style={{
               display: 'flex',
               background: '#ef4444',
               color: '#fff',
-              fontSize: 13,
+              fontSize: 15,
               fontWeight: 800,
-              paddingTop: 3,
-              paddingBottom: 3,
-              paddingLeft: 10,
-              paddingRight: 10,
-              borderRadius: 5,
-              marginRight: 14,
+              paddingTop: 4,
+              paddingBottom: 4,
+              paddingLeft: 12,
+              paddingRight: 12,
+              borderRadius: 6,
+              marginLeft: 16,
               marginTop: 4,
             }}>
               SL $90,000
@@ -152,19 +128,20 @@ export function GET() {
           {/* Candlesticks */}
           <div style={{
             position: 'absolute',
-            bottom: 24,
-            left: 16,
-            right: 16,
-            height: 300,
+            bottom: 20,
+            left: 20,
+            right: 20,
+            height: 220,
             display: 'flex',
             alignItems: 'flex-end',
-            gap: 7,
+            gap: 8,
           }}>
             {([
-              [120, true], [100, false], [150, true], [90, false],
-              [165, true], [130, true], [110, false], [185, true],
-              [145, false], [200, true], [165, true], [180, false],
-              [220, true], [195, true], [210, true],
+              [80, true], [65, false], [100, true], [58, false],
+              [115, true], [88, true], [72, false], [130, true],
+              [95, false], [145, true], [110, true], [128, false],
+              [160, true], [135, true], [150, true], [170, true],
+              [142, false], [155, true],
             ] as [number, boolean][]).map(([h, up], i) => (
               <div
                 key={i}
@@ -173,14 +150,42 @@ export function GET() {
                   height: h,
                   borderRadius: 3,
                   background: up ? '#22c55e' : '#ef4444',
-                  opacity: 0.72,
+                  opacity: 0.75,
                 }}
               />
             ))}
           </div>
         </div>
+
+        {/* Feature pills */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 20,
+          paddingBottom: 56,
+        }}>
+          {['📈 Chart', '🎯 TP / SL', '🔔 Alerts', '🚀 Share'].map((label) => (
+            <div
+              key={label}
+              style={{
+                display: 'flex',
+                background: 'rgba(124,58,237,0.25)',
+                color: '#c084fc',
+                fontSize: 20,
+                fontWeight: 600,
+                paddingTop: 10,
+                paddingBottom: 10,
+                paddingLeft: 24,
+                paddingRight: 24,
+                borderRadius: 100,
+              }}
+            >
+              {label}
+            </div>
+          ))}
+        </div>
       </div>
     ),
-    { width: 1200, height: 630 },
+    { width: 1200, height: 800 },
   )
 }
