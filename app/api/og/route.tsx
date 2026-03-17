@@ -5,7 +5,6 @@ export const runtime = 'edge'
 
 const SAFE_TEXT_RE = /^[\w\s\-.()#$%&@!?:,]{1,64}$/
 const COIN_ID_RE   = /^[a-z0-9-]{1,64}$/
-const NUM_RE       = /^[\d.,]{1,80}$/
 
 function sanitizeText(raw: string | null, fallback: string) {
   if (!raw) return fallback
@@ -14,17 +13,17 @@ function sanitizeText(raw: string | null, fallback: string) {
 function sanitizePrices(raw: string | null, limit = 5): number[] {
   if (!raw) return []
   return raw.split(',').filter(Boolean).slice(0, limit)
-    .map((s) => parseFloat(s)).filter((n) => isFinite(n) && n > 0)
-}
-function pct(a: number, b: number) {
-  const v = ((a - b) / b) * 100
-  return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'
+    .map(Number).filter((n) => isFinite(n) && n > 0)
 }
 function fmt(n: number) {
   if (n >= 1_000_000) return '$' + (n / 1_000_000).toFixed(2) + 'M'
   if (n >= 1_000)     return '$' + n.toLocaleString()
   if (n >= 1)         return '$' + n.toFixed(2)
   return '$' + n.toPrecision(4)
+}
+function pct(a: number, base: number) {
+  const v = ((a - base) / base) * 100
+  return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'
 }
 
 export async function GET(req: NextRequest) {
@@ -39,244 +38,183 @@ export async function GET(req: NextRequest) {
   const coinName   = sanitizeText(sp.get('coinName'),   'Unknown')
   const priceRaw   = parseFloat(sp.get('price') ?? '0')
   const price      = isFinite(priceRaw) && priceRaw > 0 ? priceRaw : 0
+  const tpList     = sanitizePrices(sp.get('tp')).sort((a, b) => b - a)
+  const slList     = sanitizePrices(sp.get('sl')).sort((a, b) => b - a)
 
-  const rawTp = NUM_RE.test(sp.get('tp') ?? '') ? sp.get('tp')! : ''
-  const rawSl = NUM_RE.test(sp.get('sl') ?? '') ? sp.get('sl')! : ''
-  const tpList = sanitizePrices(rawTp)
-  const slList = sanitizePrices(rawSl)
+  // All price levels sorted high → low
+  type Level = { price: number; type: 'tp' | 'current' | 'sl' }
+  const levels: Level[] = [
+    ...tpList.map((p) => ({ price: p, type: 'tp' as const })),
+    ...(price > 0 ? [{ price, type: 'current' as const }] : []),
+    ...slList.map((p) => ({ price: p, type: 'sl' as const })),
+  ].sort((a, b) => b.price - a.price)
 
-  // ── Price scale geometry ────────────────────────────────────────
-  const W = 1200, H = 630
-  const SCALE_X = 520   // left edge of scale bar
-  const SCALE_W = 48    // width of the colored bar
-  const SCALE_TOP = 80, SCALE_BOT = H - 80
-  const SCALE_H = SCALE_BOT - SCALE_TOP
+  // Price range for bar scaling
+  const allPrices = levels.map((l) => l.price)
+  const lo = allPrices.length ? Math.min(...allPrices) : 0
+  const hi = allPrices.length ? Math.max(...allPrices) : 1
+  const range = hi === lo ? hi * 0.2 : hi - lo
+  // Max bar width in px (full range = 380px)
+  const BAR_MAX = 380
+  const barPx = (p: number) => Math.round((Math.abs(p - price) / range) * BAR_MAX)
 
-  const allPrices = [...tpList, ...slList, price].filter((p) => p > 0)
-  let lo = Math.min(...allPrices), hi = Math.max(...allPrices)
-  if (lo === hi) { lo = price * 0.85; hi = price * 1.15 }
-  const pad = (hi - lo) * 0.18
-  lo -= pad; hi += pad
+  const colors: Record<Level['type'], string> = {
+    tp: '#22c55e',
+    current: '#fbbf24',
+    sl: '#ef4444',
+  }
+  const bgColors: Record<Level['type'], string> = {
+    tp: 'rgba(34,197,94,0.15)',
+    current: 'rgba(251,191,36,0.12)',
+    sl: 'rgba(239,68,68,0.15)',
+  }
+  const textColors: Record<Level['type'], string> = {
+    tp: '#86efac',
+    current: '#fbbf24',
+    sl: '#fca5a5',
+  }
+  const labelText: Record<Level['type'], string> = {
+    tp: 'TP',
+    current: 'NOW',
+    sl: 'SL',
+  }
 
-  const py = (p: number) => SCALE_TOP + SCALE_H - ((p - lo) / (hi - lo)) * SCALE_H
-
-  // current price Y
-  const curY = price > 0 ? py(price) : (SCALE_TOP + SCALE_BOT) / 2
-
-  return new ImageResponse(
+  const img = new ImageResponse(
     (
       <div style={{
-        width: W, height: H,
+        width: 1200, height: 630,
         background: '#080818',
         display: 'flex',
+        flexDirection: 'column',
         fontFamily: 'sans-serif',
-        position: 'relative',
+        paddingTop: 48,
+        paddingBottom: 40,
+        paddingLeft: 64,
+        paddingRight: 64,
+        gap: 32,
       }}>
 
-        {/* ── Left info panel ── */}
+        {/* ── Header ── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <div style={{
+              background: '#7c3aed', borderRadius: 10,
+              paddingLeft: 18, paddingRight: 18, paddingTop: 7, paddingBottom: 7,
+              fontSize: 18, fontWeight: 700, color: 'white',
+            }}>
+              Exit Planner
+            </div>
+            <span style={{ fontSize: 44, fontWeight: 900, color: 'white' }}>{coinSymbol}</span>
+            <span style={{ fontSize: 22, color: '#5555aa' }}>{coinName}</span>
+          </div>
+          {price > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+              <span style={{ fontSize: 14, color: '#44446a', letterSpacing: 2 }}>CURRENT PRICE</span>
+              <span style={{ fontSize: 38, fontWeight: 800, color: '#fbbf24' }}>{fmt(price)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* ── Price level rows ── */}
         <div style={{
-          width: 480,
+          flex: 1,
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          paddingLeft: 56,
-          paddingRight: 32,
-          gap: 18,
+          gap: 10,
         }}>
-          {/* Badge */}
-          <div style={{
-            display: 'flex',
-            background: '#7c3aed',
-            borderRadius: 10,
-            paddingLeft: 16, paddingRight: 16,
-            paddingTop: 6, paddingBottom: 6,
-            fontSize: 16, fontWeight: 700, color: 'white',
-            width: 'fit-content',
-          }}>
-            Exit Planner
-          </div>
+          {levels.length === 0 ? (
+            <span style={{ fontSize: 22, color: '#3a3a5a' }}>No lines set</span>
+          ) : (
+            levels.map((level, i) => {
+              const isAbove = level.price >= price
+              const bw = price > 0 ? barPx(level.price) : 200
+              const pctStr = price > 0 && level.type !== 'current' ? pct(level.price, price) : ''
+              return (
+                <div key={i} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: bgColors[level.type],
+                  borderRadius: 12,
+                  paddingLeft: 20,
+                  paddingRight: 20,
+                  paddingTop: 14,
+                  paddingBottom: 14,
+                  gap: 0,
+                }}>
+                  {/* Left: label badge + price */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, width: 320 }}>
+                    <div style={{
+                      display: 'flex',
+                      background: colors[level.type],
+                      color: level.type === 'tp' ? '#000' : '#fff',
+                      fontSize: 14, fontWeight: 800,
+                      paddingLeft: 12, paddingRight: 12, paddingTop: 4, paddingBottom: 4,
+                      borderRadius: 8,
+                      minWidth: 52,
+                      justifyContent: 'center',
+                    }}>
+                      {labelText[level.type]}
+                    </div>
+                    <span style={{ fontSize: 28, fontWeight: 800, color: textColors[level.type] }}>
+                      {fmt(level.price)}
+                    </span>
+                  </div>
 
-          {/* Symbol + name */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ fontSize: 64, fontWeight: 900, color: 'white', lineHeight: 1 }}>
-              {coinSymbol}
-            </span>
-            <span style={{ fontSize: 20, color: '#6666aa' }}>{coinName}</span>
-          </div>
+                  {/* Center: horizontal bar */}
+                  <div style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: level.type === 'current' ? 'flex-start' : 'flex-start',
+                    gap: 8,
+                  }}>
+                    {level.type !== 'current' ? (
+                      <div style={{
+                        height: 12,
+                        width: bw,
+                        background: `linear-gradient(to right, ${colors[level.type]}, ${colors[level.type]}44)`,
+                        borderRadius: 6,
+                        maxWidth: BAR_MAX,
+                      }} />
+                    ) : (
+                      <div style={{
+                        height: 3,
+                        width: 240,
+                        background: '#fbbf2466',
+                        borderRadius: 2,
+                      }} />
+                    )}
+                  </div>
 
-          {/* Current price */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ fontSize: 14, color: '#4a4a70', letterSpacing: 2 }}>CURRENT PRICE</span>
-            <span style={{ fontSize: 40, fontWeight: 800, color: '#fbbf24' }}>
-              {price > 0 ? fmt(price) : '—'}
-            </span>
-          </div>
-
-          {/* TP summary */}
-          {tpList.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {tpList.slice(0, 3).map((tp, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: 5, background: '#22c55e' }} />
-                  <span style={{ fontSize: 22, color: '#86efac', fontWeight: 700 }}>{fmt(tp)}</span>
-                  <span style={{ fontSize: 15, color: '#22c55e' }}>{price > 0 ? pct(tp, price) : ''}</span>
+                  {/* Right: % diff */}
+                  <div style={{ width: 120, display: 'flex', justifyContent: 'flex-end' }}>
+                    {pctStr ? (
+                      <span style={{
+                        fontSize: 20, fontWeight: 700,
+                        color: isAbove ? '#4ade80' : '#f87171',
+                      }}>
+                        {pctStr}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 14, color: '#44446a' }}>current</span>
+                    )}
+                  </div>
                 </div>
-              ))}
-            </div>
+              )
+            })
           )}
-
-          {/* SL summary */}
-          {slList.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {slList.slice(0, 3).map((sl, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: 5, background: '#ef4444' }} />
-                  <span style={{ fontSize: 22, color: '#fca5a5', fontWeight: 700 }}>{fmt(sl)}</span>
-                  <span style={{ fontSize: 15, color: '#ef4444' }}>{price > 0 ? pct(sl, price) : ''}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Hashtag */}
-          <span style={{ fontSize: 14, color: '#2a2a48', marginTop: 4 }}>#ExitPlanner</span>
         </div>
 
-        {/* ── Right: SVG price scale ── */}
-        <svg
-          width={W - 480}
-          height={H}
-          viewBox={`0 0 ${W - 480} ${H}`}
-          style={{ display: 'block', position: 'absolute', left: 480, top: 0 }}
-        >
-          {/* Background */}
-          <rect x="0" y="0" width={W - 480} height={H} fill="#0d0d20" />
-
-          {/* Profit zone (current → TP max) */}
-          {tpList.length > 0 && price > 0 && (
-            <rect
-              x={SCALE_X - 480} y={py(Math.max(...tpList)) - SCALE_TOP + SCALE_TOP}
-              width={SCALE_W}
-              height={curY - (py(Math.max(...tpList)) - SCALE_TOP + SCALE_TOP)}
-              fill="#22c55e"
-              opacity="0.25"
-            />
-          )}
-
-          {/* Loss zone (SL min → current) */}
-          {slList.length > 0 && price > 0 && (
-            <rect
-              x={SCALE_X - 480} y={curY}
-              width={SCALE_W}
-              height={(py(Math.min(...slList)) - SCALE_TOP + SCALE_TOP) - curY}
-              fill="#ef4444"
-              opacity="0.25"
-            />
-          )}
-
-          {/* Scale bar outline */}
-          <rect
-            x={SCALE_X - 480} y={SCALE_TOP}
-            width={SCALE_W} height={SCALE_H}
-            fill="none" stroke="#2a2a48" strokeWidth="1"
-            rx="4"
-          />
-
-          {/* TP lines */}
-          {tpList.map((tp, i) => {
-            const y = py(tp) - SCALE_TOP + SCALE_TOP
-            const labelX = SCALE_X - 480 + SCALE_W + 16
-            return (
-              <g key={i}>
-                <line x1={SCALE_X - 480 - 200} y1={y} x2={SCALE_X - 480 + SCALE_W + 360} y2={y}
-                  stroke="#22c55e" strokeWidth="2" opacity="0.5" />
-                <line x1={SCALE_X - 480} y1={y} x2={SCALE_X - 480 + SCALE_W} y2={y}
-                  stroke="#22c55e" strokeWidth="3" />
-                {/* Label box */}
-                <rect x={labelX} y={y - 14} width={200} height={28} rx={5} fill="#166534" opacity="0.9" />
-                <rect x={labelX} y={y - 14} width={4} height={28} rx={2} fill="#22c55e" />
-              </g>
-            )
-          })}
-
-          {/* SL lines */}
-          {slList.map((sl, i) => {
-            const y = py(sl) - SCALE_TOP + SCALE_TOP
-            const labelX = SCALE_X - 480 + SCALE_W + 16
-            return (
-              <g key={i}>
-                <line x1={SCALE_X - 480 - 200} y1={y} x2={SCALE_X - 480 + SCALE_W + 360} y2={y}
-                  stroke="#ef4444" strokeWidth="2" opacity="0.5" />
-                <line x1={SCALE_X - 480} y1={y} x2={SCALE_X - 480 + SCALE_W} y2={y}
-                  stroke="#ef4444" strokeWidth="3" />
-                {/* Label box */}
-                <rect x={labelX} y={y - 14} width={200} height={28} rx={5} fill="#7f1d1d" opacity="0.9" />
-                <rect x={labelX} y={y - 14} width={4} height={28} rx={2} fill="#ef4444" />
-              </g>
-            )
-          })}
-
-          {/* Current price line */}
-          {price > 0 && (
-            <g>
-              <line x1={SCALE_X - 480 - 200} y1={curY} x2={SCALE_X - 480 + SCALE_W + 360} y2={curY}
-                stroke="#fbbf24" strokeWidth="2" strokeDasharray="10,5" opacity="0.8" />
-              <circle cx={SCALE_X - 480 + SCALE_W / 2} cy={curY} r="7" fill="#fbbf24" />
-            </g>
-          )}
-        </svg>
-
-        {/* ── SVG label text overlaid as divs ── */}
-        {tpList.map((tp, i) => {
-          const y = py(tp)
-          const labelX = SCALE_X + SCALE_W + 16 + 4 + 8
-          return (
-            <div key={i} style={{
-              position: 'absolute',
-              left: labelX,
-              top: y - 10,
-              display: 'flex',
-              gap: 8,
-              alignItems: 'center',
-            }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: '#86efac' }}>{fmt(tp)}</span>
-              <span style={{ fontSize: 13, color: '#22c55e' }}>{price > 0 ? pct(tp, price) : ''}</span>
-            </div>
-          )
-        })}
-        {slList.map((sl, i) => {
-          const y = py(sl)
-          const labelX = SCALE_X + SCALE_W + 16 + 4 + 8
-          return (
-            <div key={i} style={{
-              position: 'absolute',
-              left: labelX,
-              top: y - 10,
-              display: 'flex',
-              gap: 8,
-              alignItems: 'center',
-            }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: '#fca5a5' }}>{fmt(sl)}</span>
-              <span style={{ fontSize: 13, color: '#ef4444' }}>{price > 0 ? pct(sl, price) : ''}</span>
-            </div>
-          )
-        })}
-        {price > 0 && (
-          <div style={{
-            position: 'absolute',
-            left: SCALE_X + SCALE_W + 16 + 4 + 8,
-            top: curY - 10,
-            display: 'flex',
-            gap: 8,
-            alignItems: 'center',
-          }}>
-            <span style={{ fontSize: 16, fontWeight: 800, color: '#fbbf24' }}>{fmt(price)}</span>
-            <span style={{ fontSize: 13, color: '#a16207' }}>NOW</span>
-          </div>
-        )}
+        {/* ── Footer ── */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <span style={{ fontSize: 14, color: '#2a2a48' }}>#ExitPlanner</span>
+        </div>
 
       </div>
     ),
-    { width: W, height: H }
+    { width: 1200, height: 630 }
   )
+  img.headers.set('Cache-Control', 'no-store')
+  return img
 }
