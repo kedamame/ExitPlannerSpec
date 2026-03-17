@@ -21,7 +21,7 @@ export function ShareButton({ position, currentPrice, locale = 'en', label = 'Sh
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin
       const tpPrices = position.lines.filter((l) => l.type === 'takeProfit').map((l) => l.price).join(',')
       const slPrices = position.lines.filter((l) => l.type === 'stopLoss').map((l) => l.price).join(',')
-      const ogUrl = `${appUrl}/api/og?coinName=${encodeURIComponent(position.coinName)}&coinSymbol=${encodeURIComponent(position.coinSymbol)}&price=${currentPrice}&tp=${tpPrices}&sl=${slPrices}`
+      const ogUrl = `${appUrl}/api/og?coinId=${encodeURIComponent(position.coinId)}&coinName=${encodeURIComponent(position.coinName)}&coinSymbol=${encodeURIComponent(position.coinSymbol)}&price=${currentPrice}&tp=${tpPrices}&sl=${slPrices}`
       const castText = buildCastText(position, locale)
 
       // Try Farcaster SDK if available
