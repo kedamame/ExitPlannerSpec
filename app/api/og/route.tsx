@@ -34,8 +34,12 @@ export async function GET(req: NextRequest) {
     return new Response('Bad Request', { status: 400 })
   }
 
-  const coinSymbol = sanitizeText(sp.get('coinSymbol'), '???')
-  const coinName   = sanitizeText(sp.get('coinName'),   'Unknown')
+  // Fallback symbol: derive from coinId if not provided (e.g. "bitcoin" → "BITCOIN")
+  const symbolFallback = coinIdParam
+    ? coinIdParam.split('-')[0].toUpperCase().slice(0, 8)
+    : '???'
+  const coinSymbol = sanitizeText(sp.get('coinSymbol'), symbolFallback) || symbolFallback
+  const coinName   = sanitizeText(sp.get('coinName'),   coinIdParam || 'Unknown')
   const priceRaw   = parseFloat(sp.get('price') ?? '0')
   const price      = isFinite(priceRaw) && priceRaw > 0 ? priceRaw : 0
   const tpList     = sanitizePrices(sp.get('tp')).sort((a, b) => b - a)
@@ -82,16 +86,16 @@ export async function GET(req: NextRequest) {
   const img = new ImageResponse(
     (
       <div style={{
-        width: 1200, height: 630,
+        width: 1200, height: 800,
         background: '#080818',
         display: 'flex',
         flexDirection: 'column',
         fontFamily: 'sans-serif',
-        paddingTop: 48,
-        paddingBottom: 40,
-        paddingLeft: 64,
-        paddingRight: 64,
-        gap: 32,
+        paddingTop: 60,
+        paddingBottom: 52,
+        paddingLeft: 80,
+        paddingRight: 80,
+        gap: 36,
       }}>
 
         {/* ── Header ── */}
@@ -213,7 +217,7 @@ export async function GET(req: NextRequest) {
 
       </div>
     ),
-    { width: 1200, height: 630 }
+    { width: 1200, height: 800 }
   )
   img.headers.set('Cache-Control', 'no-store')
   return img

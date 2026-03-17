@@ -44,7 +44,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     openGraph: {
       title: `${coinSymbol} Exit Strategy`,
       description: desc,
-      images: [{ url: ogUrl, width: 1200, height: 630 }],
+      images: [{ url: ogUrl, width: 1200, height: 800 }],
     },
     twitter: {
       card: 'summary_large_image',
