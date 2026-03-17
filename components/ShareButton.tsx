@@ -21,7 +21,8 @@ export function ShareButton({ position, currentPrice, locale = 'en', label = 'Sh
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin
       const tpPrices = position.lines.filter((l) => l.type === 'takeProfit').map((l) => l.price).join(',')
       const slPrices = position.lines.filter((l) => l.type === 'stopLoss').map((l) => l.price).join(',')
-      const ogUrl = `${appUrl}/api/og?coinId=${encodeURIComponent(position.coinId)}&coinName=${encodeURIComponent(position.coinName)}&coinSymbol=${encodeURIComponent(position.coinSymbol)}&price=${currentPrice}&tp=${tpPrices}&sl=${slPrices}`
+      // /share page has og:image + fc:frame meta tags — Farcaster renders it as a rich embed
+      const shareUrl = `${appUrl}/share?coinId=${encodeURIComponent(position.coinId)}&coinName=${encodeURIComponent(position.coinName)}&coinSymbol=${encodeURIComponent(position.coinSymbol)}&price=${currentPrice}&tp=${encodeURIComponent(tpPrices)}&sl=${encodeURIComponent(slPrices)}`
       const castText = buildCastText(position, locale)
 
       // Try Farcaster SDK if available
@@ -29,11 +30,11 @@ export function ShareButton({ position, currentPrice, locale = 'en', label = 'Sh
         const { sdk } = await import('@farcaster/miniapp-sdk')
         await sdk.actions.composeCast({
           text: castText,
-          embeds: [ogUrl],
+          embeds: [shareUrl],
         })
       } catch {
         // Fallback: open Warpcast compose URL
-        const params = new URLSearchParams({ text: castText, 'embeds[]': ogUrl })
+        const params = new URLSearchParams({ text: castText, 'embeds[]': shareUrl })
         window.open(`https://warpcast.com/~/compose?${params.toString()}`, '_blank')
       }
     } finally {
