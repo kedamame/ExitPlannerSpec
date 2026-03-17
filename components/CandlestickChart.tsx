@@ -36,6 +36,7 @@ export function CandlestickChart({
   const priceLineRefs = useRef<Map<string, LWSeries>>(new Map())
   const currentPriceLineRef = useRef<LWSeries>(null)
   const [chartReady, setChartReady] = useState(false)
+  const [hoverPrice, setHoverPrice] = useState<number | null>(null)
 
   // Initialize chart
   useEffect(() => {
@@ -124,6 +125,21 @@ export function CandlestickChart({
     })
   }, [currentPrice, chartReady])
 
+  // Crosshair move → track hover price for add-mode preview
+  useEffect(() => {
+    if (!chartReady || !chartRef.current || !seriesRef.current) return
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handler = (param: any) => {
+      if (!param.point || !seriesRef.current) { setHoverPrice(null); return }
+      const price = seriesRef.current.coordinateToPrice(param.point.y)
+      setHoverPrice(price !== null && price > 0 ? price : null)
+    }
+
+    chartRef.current.subscribeCrosshairMove(handler)
+    return () => { chartRef.current?.unsubscribeCrosshairMove(handler) }
+  }, [chartReady])
+
   // Chart click → add line at tapped price
   useEffect(() => {
     if (!chartReady || !chartRef.current || !seriesRef.current || addMode === 'off' || !onChartAddLine) return
@@ -133,7 +149,9 @@ export function CandlestickChart({
       if (!param.point || !seriesRef.current) return
       const price = seriesRef.current.coordinateToPrice(param.point.y)
       if (price === null || price <= 0) return
-      const rounded = Math.round(price * 100000) / 100000
+      // Round to 8 significant figures to avoid floating-point noise
+      const mag = price > 0 ? Math.pow(10, 8 - Math.ceil(Math.log10(price))) : 1e8
+      const rounded = Math.round(price * mag) / mag
       onChartAddLine(addMode === 'tp' ? 'takeProfit' : 'stopLoss', rounded)
     }
 
@@ -181,12 +199,15 @@ export function CandlestickChart({
 
       {/* Add-mode hint banner */}
       {addMode !== 'off' && (
-        <div className={`text-center text-xs py-1 mb-1 rounded-lg font-medium ${
+        <div className={`flex items-center justify-between text-xs py-1.5 px-3 mb-1 rounded-lg font-medium ${
           addMode === 'tp'
             ? 'bg-green-500/20 text-green-400 border border-green-500/30'
             : 'bg-red-500/20 text-red-400 border border-red-500/30'
         }`}>
-          {addMode === 'tp' ? '📍 タップして利確ラインを追加' : '📍 タップして損切りラインを追加'}
+          <span>{addMode === 'tp' ? '📍 タップして利確ラインを追加' : '📍 タップして損切りラインを追加'}</span>
+          {hoverPrice !== null && (
+            <span className="font-bold tabular-nums">{formatPrice(hoverPrice)}</span>
+          )}
         </div>
       )}
 
