@@ -33,24 +33,32 @@ export function useCurrentPrice(coinId: string) {
 
 export function useOHLC(coinId: string, timeframe: Timeframe) {
   const [data, setData] = useState<OHLCData[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loadedKey, setLoadedKey] = useState('')
+  const requestKey = `${coinId}:${timeframe}`
 
   useEffect(() => {
     const config = TIMEFRAME_CONFIGS.find((c) => c.label === timeframe)
     if (!config) return
 
-    setLoading(true)
+    let cancelled = false
+
     fetch(`/api/ohlc/${coinId}?days=${config.days}&timeframe=${timeframe}`)
       .then((r) => r.json())
       .then((d) => {
+        if (cancelled) return
         setData(d.data ?? [])
-        setLoading(false)
+        setLoadedKey(requestKey)
       })
       .catch((e) => {
+        if (cancelled) return
         console.error('OHLC fetch error', e)
-        setLoading(false)
+        setData([])
+        setLoadedKey(requestKey)
       })
-  }, [coinId, timeframe])
+    return () => {
+      cancelled = true
+    }
+  }, [coinId, timeframe, requestKey])
 
-  return { data, loading }
+  return { data, loading: loadedKey !== requestKey }
 }

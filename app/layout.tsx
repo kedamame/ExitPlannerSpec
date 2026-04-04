@@ -1,44 +1,36 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
 import { Providers } from "@/components/Providers";
+import {
+  APP_DESCRIPTION,
+  APP_NAME,
+  APP_URL,
+  BASE_APP_ID,
+  farcasterEmbed,
+} from "@/lib/appConfig";
+import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://exit-planner-spec.vercel.app";
-const previewImageUrl = `${appUrl}/preview.png`;
+const previewImageUrl = `${APP_URL}/preview.png`;
 
 export const metadata: Metadata = {
-  title: "Exit Planner",
-  description: "Set your exit strategy for held coins — Farcaster MiniApp",
+  metadataBase: new URL(APP_URL),
+  title: APP_NAME,
+  description: APP_DESCRIPTION,
   openGraph: {
-    title: "Exit Planner",
-    description: "Set your exit strategy for held coins",
+    title: APP_NAME,
+    description: APP_DESCRIPTION,
+    type: "website",
+    images: [previewImageUrl],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: APP_NAME,
+    description: APP_DESCRIPTION,
     images: [previewImageUrl],
   },
   other: {
-    "fc:frame": JSON.stringify({
-      version: "next",
-      imageUrl: previewImageUrl,
-      button: {
-        title: "Open Exit Planner",
-        action: {
-          type: "launch_frame",
-          name: "Exit Planner",
-          url: appUrl,
-          splashImageUrl: `${appUrl}/splash.png`,
-          splashBackgroundColor: "#0f0f23",
-        },
-      },
-    }),
+    "fc:miniapp": JSON.stringify(farcasterEmbed),
+    "fc:frame": JSON.stringify(farcasterEmbed),
+    ...(BASE_APP_ID ? { "base:app_id": BASE_APP_ID } : {}),
   },
 };
 
@@ -49,9 +41,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-950 text-white`}
-      >
+      <body className="antialiased bg-gray-950 text-white">
         <Providers>{children}</Providers>
       </body>
     </html>

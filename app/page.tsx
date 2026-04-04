@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
 import { CoinSearch } from '@/components/CoinSearch'
-import { WalletConnect } from '@/components/WalletConnect'
 import { LanguageToggle } from '@/components/LanguageToggle'
+import { WalletConnect } from '@/components/WalletConnect'
+import { useFarcasterMiniApp } from '@/hooks/useFarcasterMiniApp'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 
 const messages = {
@@ -20,14 +20,14 @@ const messages = {
   },
   ja: {
     title: 'Exit Planner',
-    subtitle: '保有コインの出口戦略を設定しよう',
-    searchPlaceholder: 'ティッカーまたはコントラクトアドレスを入力',
-    connectEVM: 'EVMウォレット接続',
-    connectSolana: 'Solanaウォレット接続',
-    walletTokens: '保有トークン',
-    disconnect: '切断',
-    or: 'または',
-    supportedChains: '対応チェーン',
+    subtitle: '菫晄怏繧ｳ繧､繝ｳ縺ｮ蜃ｺ蜿｣謌ｦ逡･繧定ｨｭ螳壹＠繧医≧',
+    searchPlaceholder: '繝・ぅ繝・き繝ｼ縺ｾ縺溘・繧ｳ繝ｳ繝医Λ繧ｯ繝医い繝峨Ξ繧ｹ繧貞・蜉・',
+    connectEVM: 'EVM繧ｦ繧ｩ繝ｬ繝・ヨ謗･邯・',
+    connectSolana: 'Solana繧ｦ繧ｩ繝ｬ繝・ヨ謗･邯・',
+    walletTokens: '菫晄怏繝医・繧ｯ繝ｳ',
+    disconnect: '蛻・妙',
+    or: '縺ｾ縺溘・',
+    supportedChains: '蟇ｾ蠢懊メ繧ｧ繝ｼ繝ｳ',
   },
 }
 
@@ -64,18 +64,11 @@ const CHAINS = [
 
 export default function HomePage() {
   const [locale] = useLocalStorage<'en' | 'ja'>('exit_planner_locale', 'en')
+  const { isInMiniApp, isLoading, user } = useFarcasterMiniApp()
   const t = messages[locale] ?? messages.en
-
-  // Initialize Farcaster SDK
-  useEffect(() => {
-    import('@farcaster/miniapp-sdk').then(({ sdk }) => {
-      sdk.actions.ready().catch(() => {})
-    }).catch(() => {})
-  }, [])
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-950">
-      {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
@@ -86,12 +79,20 @@ export default function HomePage() {
         <LanguageToggle />
       </header>
 
-      {/* Main */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 gap-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white mb-2">{t.title}</h1>
           <p className="text-gray-400 mb-4">{t.subtitle}</p>
-          {/* Supported chains */}
+          <div className="mb-4 flex items-center justify-center gap-2 text-xs text-gray-500">
+            <span className="rounded-full border border-gray-800 bg-gray-900 px-3 py-1">
+              {isLoading ? 'Detecting app mode...' : isInMiniApp ? 'Farcaster miniapp' : 'Browser web app'}
+            </span>
+            {user?.displayName && (
+              <span className="rounded-full border border-purple-500/30 bg-purple-500/10 px-3 py-1 text-purple-200">
+                @{user.username ?? user.displayName}
+              </span>
+            )}
+          </div>
           <div className="flex items-center justify-center gap-2 flex-wrap">
             <span className="text-xs text-gray-600">{t.supportedChains}:</span>
             {CHAINS.map((chain) => (
@@ -106,19 +107,19 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Search */}
         <div className="w-full max-w-lg">
           <CoinSearch placeholder={t.searchPlaceholder} />
         </div>
 
         <div className="text-gray-600 text-sm">{t.or}</div>
 
-        {/* Wallet Connect */}
         <WalletConnect
           connectEVMLabel={t.connectEVM}
           connectSolanaLabel={t.connectSolana}
           walletTokensLabel={t.walletTokens}
           disconnectLabel={t.disconnect}
+          isInMiniApp={isInMiniApp}
+          isDetectingMiniApp={isLoading}
         />
       </main>
     </div>

@@ -3,20 +3,31 @@
 import { useState, useEffect } from 'react'
 
 export function useLocalStorage<T>(key: string, initialValue: T) {
-  const [storedValue, setStoredValue] = useState<T>(initialValue)
-  const [hydrated, setHydrated] = useState(false)
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    if (typeof window === 'undefined') {
+      return initialValue
+    }
 
-  useEffect(() => {
     try {
       const item = window.localStorage.getItem(key)
-      if (item) {
-        setStoredValue(JSON.parse(item))
-      }
+      return item ? JSON.parse(item) : initialValue
     } catch (error) {
       console.error('useLocalStorage read error:', error)
+      return initialValue
     }
-    setHydrated(true)
-  }, [key])
+  })
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    try {
+      window.localStorage.setItem(key, JSON.stringify(storedValue))
+    } catch (error) {
+      console.error('useLocalStorage sync error:', error)
+    }
+  }, [key, storedValue])
 
   const setValue = (value: T | ((val: T) => T)) => {
     try {
@@ -28,5 +39,5 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     }
   }
 
-  return [storedValue, setValue, hydrated] as const
+  return [storedValue, setValue] as const
 }

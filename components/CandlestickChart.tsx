@@ -40,18 +40,19 @@ export function CandlestickChart({
 
   // Initialize chart
   useEffect(() => {
-    if (!containerRef.current) return
+    const container = containerRef.current
+    if (!container) return
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let lwModule: any = null
 
     import('lightweight-charts').then((mod) => {
-      if (!containerRef.current) return
+      if (!container) return
       lwModule = mod
 
-      const chart = mod.createChart(containerRef.current, {
-        width: containerRef.current.clientWidth,
-        height: containerRef.current.clientHeight,
+      const chart = mod.createChart(container, {
+        width: container.clientWidth,
+        height: container.clientHeight,
         layout: {
           background: { color: '#0f0f23' },
           textColor: '#a0a0c0',
@@ -78,28 +79,27 @@ export function CandlestickChart({
       setChartReady(true)
 
       const handleResize = () => {
-        if (containerRef.current && chartRef.current) {
-          chartRef.current.applyOptions({ width: containerRef.current.clientWidth })
+        if (chartRef.current) {
+          chartRef.current.applyOptions({ width: container.clientWidth })
         }
       }
       window.addEventListener('resize', handleResize)
 
       // Store cleanup fn
-      ;(containerRef.current as HTMLDivElement & { _cleanup?: () => void })._cleanup = () => {
+      ;(container as HTMLDivElement & { _cleanup?: () => void })._cleanup = () => {
         window.removeEventListener('resize', handleResize)
         chart.remove()
       }
     })
 
     return () => {
-      const el = containerRef.current as (HTMLDivElement & { _cleanup?: () => void }) | null
+      const el = container as HTMLDivElement & { _cleanup?: () => void }
       if (el?._cleanup) {
         el._cleanup()
       } else if (chartRef.current && lwModule) {
         chartRef.current.remove()
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Update data

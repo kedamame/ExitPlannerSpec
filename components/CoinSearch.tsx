@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import type { CoinSearchResult } from '@/types'
@@ -74,7 +75,7 @@ export function CoinSearch({ placeholder = 'Enter ticker or contract address' }:
               className="flex items-center gap-3 px-4 py-3 hover:bg-gray-700 cursor-pointer transition"
             >
               {coin.thumb && (
-                <img src={coin.thumb} alt={coin.name} className="w-6 h-6 rounded-full" />
+                <Image src={coin.thumb} alt={coin.name} width={24} height={24} className="w-6 h-6 rounded-full" />
               )}
               <span className="font-medium text-white">{coin.symbol.toUpperCase()}</span>
               <span className="text-gray-400 text-sm flex-1">{coin.name}</span>
