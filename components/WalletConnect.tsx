@@ -185,8 +185,14 @@ export function WalletConnect({
       })
   }, [address])
 
-  const ethFallbackTokens = fallbackList.filter((t) => t.chain === 'eth')
-  const baseFallbackTokens = fallbackList.filter((t) => t.chain === 'base')
+  const ethFallbackTokens = useMemo(
+    () => fallbackList.filter((t) => t.chain === 'eth'),
+    [fallbackList],
+  )
+  const baseFallbackTokens = useMemo(
+    () => fallbackList.filter((t) => t.chain === 'base'),
+    [fallbackList],
+  )
 
   const makeContracts = (tokenList: MergedToken[], chainId: number) =>
     address && tokenList.length > 0
